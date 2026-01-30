@@ -22,6 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '../public')));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -57,6 +58,10 @@ app.get('/admin', (req, res) => {
 
 app.get('/pending-activation', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/pending-activation.html'));
+});
+
+app.get('/submit-log', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/submit-log.html'));
 });
 
 // 404 handler

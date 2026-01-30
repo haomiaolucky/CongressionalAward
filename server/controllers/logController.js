@@ -22,8 +22,11 @@ const createLog = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { activityName, category, date, hours, supervisorId, activityId, notes, proof } = req.body;
+  const { activityName, category, date, hours, supervisorId, activityId, notes } = req.body;
   const userId = req.user.userId;
+  
+  // Get uploaded file path if exists
+  const proof = req.file ? `/uploads/proofs/${req.file.filename}` : null;
 
   try {
     // Get student ID
@@ -144,7 +147,10 @@ const updateLog = async (req, res) => {
 
   const logId = req.params.id;
   const userId = req.user.userId;
-  const { activityName, date, hours, notes, proof } = req.body;
+  const { activityName, date, hours, notes } = req.body;
+  
+  // Get uploaded file path if exists
+  const proof = req.file ? `/uploads/proofs/${req.file.filename}` : req.body.existingProof;
 
   try {
     // Get student ID

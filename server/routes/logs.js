@@ -9,14 +9,15 @@ const {
   createLogValidation
 } = require('../controllers/logController');
 const { authenticateToken, requireStudent } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 
 // Public route for supervisor verification
 router.get('/verify', verifyLog);
 
 // Protected routes (require authentication)
-router.post('/', authenticateToken, requireStudent, createLogValidation, createLog);
+router.post('/', authenticateToken, requireStudent, upload.single('proof'), createLog);
 router.get('/', authenticateToken, requireStudent, getStudentLogs);
-router.put('/:id', authenticateToken, requireStudent, createLogValidation, updateLog);
+router.put('/:id', authenticateToken, requireStudent, upload.single('proof'), updateLog);
 router.delete('/:id', authenticateToken, requireStudent, deleteLog);
 
 module.exports = router;

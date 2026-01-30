@@ -162,16 +162,12 @@ const getActivities = async (req, res) => {
   }
 };
 
-// Get available supervisors
+// Get available supervisors (for log submission)
 const getSupervisors = async (req, res) => {
   try {
     const [supervisors] = await pool.query(
-      `SELECT SupervisorID, SupervisorName, Email, Role
-       FROM Supervisors
-       WHERE IsActive = TRUE
-       ORDER BY SupervisorName`
+      'SELECT SupervisorID, SupervisorName, Email, Role FROM Supervisors WHERE IsActive = TRUE ORDER BY SupervisorName'
     );
-
     res.json(supervisors);
   } catch (error) {
     console.error('Get supervisors error:', error);
@@ -179,8 +175,18 @@ const getSupervisors = async (req, res) => {
   }
 };
 
+// Placeholder functions
+const getProfile = async (req, res) => {
+  res.status(501).json({ error: 'Not implemented yet' });
+};
+
+const updateProfile = async (req, res) => {
+  res.status(501).json({ error: 'Not implemented yet' });
+};
+
 module.exports = {
   getDashboard,
-  getActivities,
+  getProfile,
+  updateProfile,
   getSupervisors
 };

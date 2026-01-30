@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Congressional Award Tracker</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="/dashboard" class="navbar-brand">Congressional Award Tracker</a>
+            <ul class="navbar-menu">
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 2rem;">
+        <div id="loading" class="text-center">
+            <div class="spinner"></div>
+            <p>Loading your dashboard...</p>
+        </div>
+
+        <div id="content" style="display: none;">
+            <!-- Student Info Card -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2>Welcome, <span id="studentName"></span>! 👋</h2>
+                    <span class="badge badge-success" id="currentLevel"></span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-3">
+                            <p><strong>Email:</strong> <span id="email"></span></p>
+                            <p><strong>Grade:</strong> <span id="grade"></span></p>
+                        </div>
+                        <div class="col-3">
+                            <p><strong>School:</strong> <span id="school"></span></p>
+                            <p><strong>Start Date:</strong> <span id="startDate"></span></p>
+                        </div>
+                        <div class="col-6 text-right">
+                            <a href="/submit-log" class="btn btn-primary btn-lg">➕ Submit New Record</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hours Summary Cards -->
+            <div class="row" style="margin-top: 1.5rem;">
+                <div class="col-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h3 style="color: #0066cc;"><span id="volunteerHours">0</span>h</h3>
+                            <p>Volunteer Service</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h3 style="color: #28a745;"><span id="pdHours">0</span>h</h3>
+                            <p>Personal Development</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h3 style="color: #ffc107;"><span id="pfHours">0</span>h</h3>
+                            <p>Physical Fitness</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h3 style="color: #17a2b8;"><span id="expeditions">0</span></h3>
+                            <p>Expeditions</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="card" style="margin-top: 1.5rem;">
+                <div class="card-header">
+                    <h3>Hours by Category</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="hoursChart" height="80"></canvas>
+                </div>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="card" style="margin-top: 1.5rem;">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3>My Activity Log</h3>
+                    <div>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search activities..." style="display: inline-block; width: 250px; margin-right: 10px;">
+                        <select id="filterCategory" class="form-select" style="display: inline-block; width: 200px;">
+                            <option value="">All Categories</option>
+                            <option value="Volunteer">Volunteer</option>
+                            <option value="Personal Development">Personal Development</option>
+                            <option value="Physical Fitness">Physical Fitness</option>
+                            <option value="Expedition">Expedition</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table class="table" id="logsTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Activity</th>
+                                <th>Category</th>
+                                <th>Hours</th>
+                                <th>Supervisor</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsBody">
+                            <tr>
+                                <td colspan="6" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allLogs = [];
+        let chart = null;
+
+        async function loadDashboard() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            try {
+                // Load user info
+                const userResponse = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const user = await userResponse.json();
+
+                // Load dashboard data
+                const dashboardResponse = await fetch('/api/students/dashboard', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const dashboard = await dashboardResponse.json();
+
+                // Load logs
+                const logsResponse = await fetch('/api/logs', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                allLogs = await logsResponse.json();
+
+                // Display data
+                displayUserInfo(user, dashboard);
+                displayHoursSummary(dashboard.hours);
+                createChart(dashboard.hours);
+                displayLogs(allLogs);
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                alert('Failed to load dashboard data');
+            }
+        }
+
+        function displayUserInfo(user, dashboard) {
+            document.getElementById('studentName').textContent = user.StudentName;
+            document.getElementById('email').textContent = user.Email;
+            document.getElementById('grade').textContent = user.Grade + 'th Grade';
+            document.getElementById('school').textContent = user.SchoolName || 'N/A';
+            document.getElementById('startDate').textContent = new Date(user.StartDate).toLocaleDateString();
+            document.getElementById('currentLevel').textContent = dashboard.student.currentLevel;
+        }
+
+        function displayHoursSummary(hours) {
+            document.getElementById('volunteerHours').textContent = hours.volunteer;
+            document.getElementById('pdHours').textContent = hours.personalDevelopment;
+            document.getElementById('pfHours').textContent = hours.physicalFitness;
+            document.getElementById('expeditions').textContent = hours.expeditions;
+        }
+
+        function createChart(hours) {
+            const ctx = document.getElementById('hoursChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Volunteer', 'Personal Development', 'Physical Fitness', 'Expeditions'],
+                    datasets: [{
+                        label: 'Hours/Events',
+                        data: [hours.volunteer, hours.personalDevelopment, hours.physicalFitness, hours.expeditions],
+                        backgroundColor: ['#0066cc', '#28a745', '#ffc107', '#17a2b8']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function displayLogs(logs) {
+            const tbody = document.getElementById('logsBody');
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No activities yet. Click "Submit New Record" to add one!</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = logs.map(log => `
+                <tr>
+                    <td>${new Date(log.Date).toLocaleDateString()}</td>
+                    <td>${log.ActivityName}</td>
+                    <td>${log.Category}</td>
+                    <td>${log.Hours}</td>
+                    <td>${log.SupervisorName}</td>
+                    <td><span class="badge badge-${log.Status === 'Approved' ? 'success' : log.Status === 'Pending' ? 'warning' : 'danger'}">${log.Status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function filterLogs() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('filterCategory').value;
+
+            const filtered = allLogs.filter(log => {
+                const matchesSearch = log.ActivityName.toLowerCase().includes(searchTerm) || 
+                                     log.SupervisorName.toLowerCase().includes(searchTerm);
+                const matchesCategory = !category || log.Category === category;
+                return matchesSearch && matchesCategory;
+            });
+
+            displayLogs(filtered);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', filterLogs);
+        document.getElementById('filterCategory').addEventListener('change', filterLogs);
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        });
+
+        loadDashboard();
+    </script>
+</body>
+</html>

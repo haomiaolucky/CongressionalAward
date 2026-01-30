@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Activity Log - Congressional Award Tracker</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="/dashboard" class="navbar-brand">Congressional Award Tracker</a>
+            <ul class="navbar-menu">
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 2rem; max-width: 800px;">
+        <div class="card">
+            <div class="card-header">
+                <h2>📝 Submit New Activity Log</h2>
+            </div>
+            <div class="card-body">
+                <div id="message"></div>
+
+                <form id="submitForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label class="form-label">Activity Name *</label>
+                        <input type="text" class="form-control" id="activityName" required>
+                        <small class="text-muted">e.g., "Food Bank Volunteering", "Piano Practice", "Soccer Training"</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-group">
+                                <label class="form-label">Category *</label>
+                                <select class="form-select" id="category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="Volunteer">Volunteer Service</option>
+                                    <option value="Personal Development">Personal Development</option>
+                                    <option value="Physical Fitness">Physical Fitness</option>
+                                    <option value="Expedition">Expedition/Exploration</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="form-group">
+                                <label class="form-label">Date *</label>
+                                <input type="date" class="form-control" id="date" required>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="form-group">
+                                <label class="form-label">Hours *</label>
+                                <input type="number" class="form-control" id="hours" min="0.1" step="any" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Supervisor *</label>
+                        <select class="form-select" id="supervisorId" required>
+                            <option value="">Loading supervisors...</option>
+                        </select>
+                        <small class="text-muted">The supervisor will receive an email to verify this activity</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Notes/Description</label>
+                        <textarea class="form-control" id="notes" rows="3" placeholder="Describe what you did..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Upload Proof (Optional)</label>
+                        <input type="file" class="form-control" id="proofFile" accept="image/*,.pdf">
+                        <small class="text-muted">Accepted: Images (JPG, PNG) or PDF. Max size: 10MB</small>
+                        <div id="filePreview" style="margin-top: 10px;"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-between" style="margin-top: 2rem;">
+                        <a href="/dashboard" class="btn btn-secondary">← Back to Dashboard</a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            Submit Activity Log
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login';
+        }
+
+        const form = document.getElementById('submitForm');
+        const messageDiv = document.getElementById('message');
+        const submitBtn = document.getElementById('submitBtn');
+        const fileInput = document.getElementById('proofFile');
+        const filePreview = document.getElementById('filePreview');
+
+        // Set max date to today
+        document.getElementById('date').max = new Date().toISOString().split('T')[0];
+
+        // Load supervisors
+        async function loadSupervisors() {
+            try {
+                const response = await fetch('/api/students/supervisors', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const supervisors = await response.json();
+
+                const select = document.getElementById('supervisorId');
+                select.innerHTML = '<option value="">Select Supervisor</option>' +
+                    supervisors.map(s => 
+                        `<option value="${s.SupervisorID}">${s.SupervisorName} - ${s.Role}</option>`
+                    ).join('');
+            } catch (error) {
+                document.getElementById('supervisorId').innerHTML = 
+                    '<option value="">Error loading supervisors</option>';
+            }
+        }
+
+        // File preview
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) {
+                filePreview.innerHTML = '';
+                return;
+            }
+
+            // Check file size
+            if (file.size > 10 * 1024 * 1024) {
+                showMessage('File size exceeds 10MB limit', 'danger');
+                fileInput.value = '';
+                filePreview.innerHTML = '';
+                return;
+            }
+
+            // Show preview
+            const fileType = file.type;
+            if (fileType.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    filePreview.innerHTML = `
+                        <div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
+                            <img src="${e.target.result}" style="max-width: 200px; max-height: 200px;">
+                            <p style="margin-top: 5px; font-size: 0.9em;">${file.name} (${(file.size / 1024).toFixed(1)} KB)</p>
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                filePreview.innerHTML = `
+                    <div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
+                        <p>📄 ${file.name} (${(file.size / 1024).toFixed(1)} KB)</p>
+                    </div>
+                `;
+            }
+        });
+
+        // Submit form
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            const formData = new FormData();
+            formData.append('activityName', document.getElementById('activityName').value);
+            formData.append('category', document.getElementById('category').value);
+            formData.append('date', document.getElementById('date').value);
+            formData.append('hours', document.getElementById('hours').value);
+            formData.append('supervisorId', document.getElementById('supervisorId').value);
+            formData.append('notes', document.getElementById('notes').value);
+
+            // Add file if selected
+            if (fileInput.files[0]) {
+                formData.append('proof', fileInput.files[0]);
+            }
+
+            try {
+                const response = await fetch('/api/logs', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage('✅ Activity log submitted successfully! Your supervisor will receive an email to verify it.', 'success');
+                    form.reset();
+                    filePreview.innerHTML = '';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 2000);
+                } else {
+                    showMessage(result.error || 'Failed to submit log', 'danger');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.', 'danger');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Activity Log';
+            }
+        });
+
+        function showMessage(message, type) {
+            messageDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            window.scrollTo(0, 0);
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        });
+
+        loadSupervisors();
+    </script>
+</body>
+</html>
