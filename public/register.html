@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Congressional Award Tracker</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="/" class="navbar-brand">Congressional Award Tracker</a>
+            <ul class="navbar-menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/login">Login</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 3rem; max-width: 600px;">
+        <div class="card">
+            <div class="card-header">
+                <h2>Student Registration</h2>
+            </div>
+            <div class="card-body">
+                <div id="message"></div>
+                
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label class="form-label">Student Name *</label>
+                        <input type="text" class="form-control" id="studentName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email *</label>
+                        <input type="email" class="form-control" id="email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Password *</label>
+                        <input type="password" class="form-control" id="password" required>
+                        <small class="text-muted">At least 6 characters</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Confirm Password *</label>
+                        <input type="password" class="form-control" id="confirmPassword" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Grade *</label>
+                        <select class="form-select" id="grade" required>
+                            <option value="">Select Grade</option>
+                            <option value="6">6th Grade</option>
+                            <option value="7">7th Grade</option>
+                            <option value="8">8th Grade</option>
+                            <option value="9">9th Grade</option>
+                            <option value="10">10th Grade</option>
+                            <option value="11">11th Grade</option>
+                            <option value="12">12th Grade</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">School Name *</label>
+                        <input type="text" class="form-control" id="schoolName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Parent Email *</label>
+                        <input type="email" class="form-control" id="parentEmail" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+                        Register
+                    </button>
+                </form>
+
+                <div class="text-center mt-3">
+                    <p>Already have an account? <a href="/login">Login here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('registerForm');
+        const messageDiv = document.getElementById('message');
+        const submitBtn = document.getElementById('submitBtn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                showMessage('Passwords do not match', 'danger');
+                return;
+            }
+
+            if (password.length < 6) {
+                showMessage('Password must be at least 6 characters', 'danger');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Registering...';
+
+            const data = {
+                studentName: document.getElementById('studentName').value,
+                email: document.getElementById('email').value,
+                password: password,
+                grade: parseInt(document.getElementById('grade').value),
+                schoolName: document.getElementById('schoolName').value,
+                parentEmail: document.getElementById('parentEmail').value
+            };
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage('Registration successful! Please wait for admin approval. You will receive an email once approved.', 'success');
+                    form.reset();
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 3000);
+                } else {
+                    showMessage(result.error || 'Registration failed', 'danger');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.', 'danger');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Register';
+            }
+        });
+
+        function showMessage(message, type) {
+            messageDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

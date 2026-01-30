@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pending Activation - Congressional Award Tracker</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="/" class="navbar-brand">Congressional Award Tracker</a>
+            <ul class="navbar-menu">
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 3rem; max-width: 700px;">
+        <div class="card">
+            <div class="card-header" style="background-color: #ffc107; color: #333;">
+                <h2>⏳ Account Pending Activation</h2>
+            </div>
+            <div class="card-body text-center">
+                <h3>Thank You for Registering!</h3>
+                <p style="font-size: 1.1rem; margin: 2rem 0;">
+                    Your account has been created successfully, but it is currently <strong>pending activation</strong> 
+                    by an administrator.
+                </p>
+                
+                <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 2rem 0; border: 1px solid #ffc107;">
+                    <p><strong>What happens next?</strong></p>
+                    <ul style="text-align: left; list-style-position: inside; margin-top: 1rem;">
+                        <li style="margin-bottom: 0.5rem;">An administrator will review your registration</li>
+                        <li style="margin-bottom: 0.5rem;">Once approved, your account will be activated</li>
+                        <li style="margin-bottom: 0.5rem;">You will be able to access all features</li>
+                        <li style="margin-bottom: 0.5rem;">You can track volunteer hours and activities</li>
+                    </ul>
+                </div>
+
+                <p class="text-muted" style="margin-bottom: 2rem;">
+                    You can log out and check back later, or contact the administrator if you have questions.
+                </p>
+
+                <div class="d-flex justify-content-center gap-2">
+                    <button class="btn btn-primary" onclick="checkStatus()">
+                        🔄 Check Activation Status
+                    </button>
+                    <button class="btn btn-secondary" onclick="logout()">
+                        Logout
+                    </button>
+                </div>
+
+                <div id="statusMessage" class="mt-3"></div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h4>Need Help?</h4>
+            </div>
+            <div class="card-body">
+                <p>If you have questions about your account activation, please contact:</p>
+                <p><strong>Administrator Email:</strong> <a href="mailto:admin@congressionalaward.org">admin@congressionalaward.org</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            logout();
+        });
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+
+        async function checkStatus() {
+            const token = localStorage.getItem('token');
+            const statusDiv = document.getElementById('statusMessage');
+            
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+
+            statusDiv.innerHTML = '<div class="spinner"></div>';
+            
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to check status');
+                }
+
+                const user = await response.json();
+
+                if (user.Status === 'Active') {
+                    statusDiv.innerHTML = '<div class="alert alert-success">✅ Your account has been activated! Redirecting to dashboard...</div>';
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 2000);
+                } else if (user.Status === 'Pending') {
+                    statusDiv.innerHTML = '<div class="alert alert-warning">⏳ Your account is still pending activation. Please check back later.</div>';
+                } else {
+                    statusDiv.innerHTML = '<div class="alert alert-info">ℹ️ Your account status: ' + user.Status + '</div>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="alert alert-danger">❌ Error checking status. Please try logging in again.</div>';
+            }
+        }
+
+        // Auto-check status on page load
+        window.addEventListener('load', () => {
+            setTimeout(checkStatus, 1000);
+        });
+    </script>
+</body>
+</html>
