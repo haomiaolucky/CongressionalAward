@@ -20,7 +20,7 @@
     <div class="container" style="margin-top: 2rem; max-width: 800px;">
         <div class="card">
             <div class="card-header">
-                <h2>📝 Submit New Activity Log</h2>
+                <h2 id="pageTitle">📝 Submit New Activity Log</h2>
             </div>
             <div class="card-body">
                 <div id="message"></div>
@@ -102,6 +102,56 @@
         const fileInput = document.getElementById('proofFile');
         const filePreview = document.getElementById('filePreview');
 
+        // Check if editing
+        const urlParams = new URLSearchParams(window.location.search);
+        const editLogId = urlParams.get('edit');
+        let editLog = null;
+
+        if (editLogId) {
+            const storedLog = localStorage.getItem('editLog');
+            if (storedLog) {
+                editLog = JSON.parse(storedLog);
+                localStorage.removeItem('editLog');
+                loadEditData();
+            }
+        }
+
+        function loadEditData() {
+            if (!editLog) return;
+            
+            document.getElementById('pageTitle').textContent = '✏️ Edit & Resubmit Activity Log';
+            document.getElementById('submitBtn').textContent = 'Resubmit Activity Log';
+            
+            document.getElementById('activityName').value = editLog.ActivityName;
+            document.getElementById('category').value = editLog.Category;
+            document.getElementById('date').value = editLog.Date.split('T')[0];
+            document.getElementById('hours').value = editLog.Hours;
+            document.getElementById('notes').value = editLog.Notes || '';
+            
+            // Will set supervisor after they're loaded
+            setTimeout(() => {
+                const supervisorSelect = document.getElementById('supervisorId');
+                // Find supervisor by name if ID doesn't work
+                const supervisorOption = Array.from(supervisorSelect.options).find(
+                    opt => opt.textContent.includes(editLog.SupervisorName)
+                );
+                if (supervisorOption) {
+                    supervisorSelect.value = supervisorOption.value;
+                }
+            }, 500);
+            
+            if (editLog.Proof) {
+                filePreview.innerHTML = `
+                    <div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
+                        <p>📎 Current proof: <a href="${editLog.Proof}" target="_blank">View</a></p>
+                        <small>Upload a new file to replace it, or leave empty to keep the current proof.</small>
+                    </div>
+                `;
+            }
+            
+            showMessage('⚠️ This log was rejected. Please make necessary changes and resubmit.', 'warning');
+        }
+
         // Set max date to today
         document.getElementById('date').max = new Date().toISOString().split('T')[0];
 
@@ -167,7 +217,7 @@
             e.preventDefault();
 
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
+            submitBtn.textContent = editLog ? 'Resubmitting...' : 'Submitting...';
 
             const formData = new FormData();
             formData.append('activityName', document.getElementById('activityName').value);
@@ -180,21 +230,37 @@
             // Add file if selected
             if (fileInput.files[0]) {
                 formData.append('proof', fileInput.files[0]);
+            } else if (editLog && editLog.Proof && !fileInput.files[0]) {
+                // Keep existing proof if no new file uploaded
+                formData.append('existingProof', editLog.Proof);
             }
 
             try {
-                const response = await fetch('/api/logs', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: formData
-                });
+                let response, result;
+                
+                if (editLog) {
+                    // Update existing log
+                    response = await fetch(`/api/logs/${editLog.LogID}`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
+                } else {
+                    // Normal submit - create new log
+                    response = await fetch('/api/logs', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
+                }
 
-                const result = await response.json();
+                result = await response.json();
 
                 if (response.ok) {
-                    showMessage('✅ Activity log submitted successfully! Your supervisor will receive an email to verify it.', 'success');
+                    const message = editLog ? 
+                        '✅ Activity log resubmitted successfully! Your supervisor will receive a new email to verify it.' :
+                        '✅ Activity log submitted successfully! Your supervisor will receive an email to verify it.';
+                    showMessage(message, 'success');
                     form.reset();
                     filePreview.innerHTML = '';
                     
@@ -208,7 +274,7 @@
                 showMessage('Network error. Please try again.', 'danger');
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit Activity Log';
+                submitBtn.textContent = editLog ? 'Resubmit Activity Log' : 'Submit Activity Log';
             }
         });
 

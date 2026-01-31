@@ -90,8 +90,8 @@ const rejectUser = async (req, res) => {
 const getAllStudents = async (req, res) => {
   try {
     const [students] = await pool.query(
-      `SELECT s.StudentID, s.StudentName, s.Grade, s.SchoolName, s.StartDate, s.CurrentLevel,
-       u.Email, u.Status,
+      `SELECT s.StudentID, s.StudentName, s.Grade, s.SchoolName, s.StartDate, s.CurrentLevel, s.Status as StudentStatus,
+       u.Email, u.Status as AccountStatus, u.UserID,
        shs.VolunteerHours, shs.PersonalDevelopmentHours, shs.PhysicalFitnessHours, 
        shs.ExpeditionCount, shs.PendingLogs, shs.ApprovedLogs
        FROM Students s
@@ -105,6 +105,48 @@ const getAllStudents = async (req, res) => {
   } catch (error) {
     console.error('Get all students error:', error);
     res.status(500).json({ error: 'Failed to retrieve students' });
+  }
+};
+
+// Activate student
+const activateStudent = async (req, res) => {
+  const studentId = req.params.id;
+
+  try {
+    const [result] = await pool.query(
+      'UPDATE Students SET Status = ? WHERE StudentID = ?',
+      ['Active', studentId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    res.json({ message: 'Student activated successfully' });
+  } catch (error) {
+    console.error('Activate student error:', error);
+    res.status(500).json({ error: 'Failed to activate student' });
+  }
+};
+
+// Deactivate student
+const deactivateStudent = async (req, res) => {
+  const studentId = req.params.id;
+
+  try {
+    const [result] = await pool.query(
+      'UPDATE Students SET Status = ? WHERE StudentID = ?',
+      ['Inactive', studentId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    res.json({ message: 'Student deactivated successfully' });
+  } catch (error) {
+    console.error('Deactivate student error:', error);
+    res.status(500).json({ error: 'Failed to deactivate student' });
   }
 };
 
@@ -185,18 +227,43 @@ const deleteActivity = async (req, res) => {
   const activityId = req.params.id;
 
   try {
-    // Soft delete - set IsActive to false
-    const [result] = await pool.query(
-      'UPDATE Activities SET IsActive = FALSE WHERE ActivityID = ?',
+    // Check if activity has associated logs
+    const [logs] = await pool.query(
+      'SELECT COUNT(*) as count FROM HourLogs WHERE ActivityID = ?',
       [activityId]
     );
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Activity not found' });
+    if (logs[0].count > 0) {
+      // Has associated records, soft delete only
+      const [result] = await pool.query(
+        'UPDATE Activities SET IsActive = FALSE WHERE ActivityID = ?',
+        [activityId]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Activity not found' });
+      }
+
+      res.json({ 
+        message: 'Activity deactivated (has associated logs)',
+        softDelete: true
+      });
+    } else {
+      // No associated records, hard delete
+      const [result] = await pool.query(
+        'DELETE FROM Activities WHERE ActivityID = ?',
+        [activityId]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Activity not found' });
+      }
+
+      res.json({ 
+        message: 'Activity deleted permanently',
+        softDelete: false
+      });
     }
-
-    res.json({ message: 'Activity deactivated successfully' });
-
   } catch (error) {
     console.error('Delete activity error:', error);
     res.status(500).json({ error: 'Failed to delete activity' });
@@ -278,6 +345,150 @@ const updateSupervisor = async (req, res) => {
   }
 };
 
+// Delete supervisor (soft delete)
+const deleteSupervisor = async (req, res) => {
+  const supervisorId = req.params.id;
+
+  try {
+    // Check if supervisor has associated logs
+    const [logs] = await pool.query(
+      'SELECT COUNT(*) as count FROM HourLogs WHERE SupervisorID = ?',
+      [supervisorId]
+    );
+
+    if (logs[0].count > 0) {
+      // Soft delete - just deactivate
+      const [result] = await pool.query(
+        'UPDATE Supervisors SET IsActive = FALSE WHERE SupervisorID = ?',
+        [supervisorId]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Supervisor not found' });
+      }
+
+      res.json({ 
+        message: 'Supervisor deactivated successfully',
+        note: 'Supervisor has associated records and was deactivated instead of deleted'
+      });
+    } else {
+      // No associated records, safe to delete
+      const [result] = await pool.query(
+        'DELETE FROM Supervisors WHERE SupervisorID = ?',
+        [supervisorId]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Supervisor not found' });
+      }
+
+      res.json({ message: 'Supervisor deleted successfully' });
+    }
+  } catch (error) {
+    console.error('Delete supervisor error:', error);
+    res.status(500).json({ error: 'Failed to delete supervisor' });
+  }
+};
+
+// Get all admin users
+const getAdminUsers = async (req, res) => {
+  try {
+    const [admins] = await pool.query(
+      `SELECT a.AdminID, a.Email, a.Name, a.IsActive, a.CreatedAt,
+       u.Email as CreatedByEmail
+       FROM AdminUsers a
+       LEFT JOIN Users u ON a.CreatedBy = u.UserID
+       ORDER BY a.CreatedAt DESC`
+    );
+
+    res.json(admins);
+  } catch (error) {
+    console.error('Get admin users error:', error);
+    res.status(500).json({ error: 'Failed to retrieve admin users' });
+  }
+};
+
+// Add new admin user
+const addAdminUser = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { email, name } = req.body;
+  const createdBy = req.user.userId;
+
+  try {
+    // Check if email already exists in AdminUsers
+    const [existing] = await pool.query(
+      'SELECT AdminID FROM AdminUsers WHERE Email = ?',
+      [email]
+    );
+
+    if (existing.length > 0) {
+      return res.status(409).json({ error: 'Email already registered as admin' });
+    }
+
+    const [result] = await pool.query(
+      'INSERT INTO AdminUsers (Email, Name, CreatedBy) VALUES (?, ?, ?)',
+      [email, name || null, createdBy]
+    );
+
+    res.status(201).json({
+      message: 'Admin user added successfully. They can now register with this email.',
+      adminId: result.insertId
+    });
+
+  } catch (error) {
+    console.error('Add admin user error:', error);
+    res.status(500).json({ error: 'Failed to add admin user' });
+  }
+};
+
+// Deactivate admin user
+const deactivateAdminUser = async (req, res) => {
+  const adminId = req.params.id;
+
+  try {
+    const [result] = await pool.query(
+      'UPDATE AdminUsers SET IsActive = FALSE WHERE AdminID = ?',
+      [adminId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Admin user not found' });
+    }
+
+    res.json({ message: 'Admin user deactivated successfully' });
+
+  } catch (error) {
+    console.error('Deactivate admin user error:', error);
+    res.status(500).json({ error: 'Failed to deactivate admin user' });
+  }
+};
+
+// Activate admin user
+const activateAdminUser = async (req, res) => {
+  const adminId = req.params.id;
+
+  try {
+    const [result] = await pool.query(
+      'UPDATE AdminUsers SET IsActive = TRUE WHERE AdminID = ?',
+      [adminId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Admin user not found' });
+    }
+
+    res.json({ message: 'Admin user activated successfully' });
+
+  } catch (error) {
+    console.error('Activate admin user error:', error);
+    res.status(500).json({ error: 'Failed to activate admin user' });
+  }
+};
+
 // Get dashboard statistics
 const getAdminStats = async (req, res) => {
   try {
@@ -311,11 +522,18 @@ const createSupervisorValidation = [
   body('email').isEmail().normalizeEmail()
 ];
 
+const addAdminValidation = [
+  body('email').isEmail().normalizeEmail(),
+  body('name').optional().trim()
+];
+
 module.exports = {
   getPendingUsers,
   approveUser,
   rejectUser,
   getAllStudents,
+  activateStudent,
+  deactivateStudent,
   getActivities,
   createActivity,
   updateActivity,
@@ -323,7 +541,13 @@ module.exports = {
   getSupervisors,
   createSupervisor,
   updateSupervisor,
+  deleteSupervisor,
+  getAdminUsers,
+  addAdminUser,
+  activateAdminUser,
+  deactivateAdminUser,
   getAdminStats,
   createActivityValidation,
-  createSupervisorValidation
+  createSupervisorValidation,
+  addAdminValidation
 };

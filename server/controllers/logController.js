@@ -1,7 +1,7 @@
 const { pool } = require('../config/db');
 const { body, validationResult } = require('express-validator');
 const { generateVerificationToken, getTokenExpiry } = require('../utils/tokenGenerator');
-const { sendVerificationEmail, sendUpdateNotificationEmail, sendApprovalEmail } = require('../utils/emailService');
+const { sendVerificationEmail, sendUpdateNotificationEmail, sendApprovalEmail, sendRejectionEmail } = require('../utils/emailService');
 
 // Validation rules
 const createLogValidation = [
@@ -166,7 +166,7 @@ const updateLog = async (req, res) => {
     const studentId = students[0].StudentID;
     const studentName = students[0].StudentName;
 
-    // Check if log exists and is pending
+    // Check if log exists and belongs to student
     const [logs] = await pool.query(
       `SELECT hl.*, s.SupervisorName, s.Email as SupervisorEmail
        FROM HourLogs hl
@@ -181,19 +181,21 @@ const updateLog = async (req, res) => {
 
     const log = logs[0];
 
-    if (log.Status !== 'Pending') {
-      return res.status(403).json({ error: 'Can only edit pending logs' });
+    // Can only edit pending or rejected logs, not approved
+    if (log.Status === 'Approved') {
+      return res.status(403).json({ error: 'Cannot edit approved logs' });
     }
 
     // Generate new token
     const newToken = generateVerificationToken();
     const tokenExpiry = getTokenExpiry();
 
-    // Update log
+    // Update log and reset status to Pending
     await pool.query(
       `UPDATE HourLogs 
        SET ActivityName = ?, Date = ?, Hours = ?, Notes = ?, Proof = ?,
-           VerificationToken = ?, TokenExpiry = ?
+           VerificationToken = ?, TokenExpiry = ?, Status = 'Pending', 
+           RejectionReason = NULL, ApprovalTime = NULL, ApprovedBy = NULL
        WHERE LogID = ?`,
       [activityName, date, hours, notes || null, proof || null, newToken, tokenExpiry, logId]
     );
@@ -224,7 +226,7 @@ const updateLog = async (req, res) => {
   }
 };
 
-// Delete pending log
+// Delete pending or rejected log
 const deleteLog = async (req, res) => {
   const logId = req.params.id;
   const userId = req.user.userId;
@@ -242,7 +244,7 @@ const deleteLog = async (req, res) => {
 
     const studentId = students[0].StudentID;
 
-    // Check if log exists and is pending
+    // Check if log exists and belongs to student
     const [logs] = await pool.query(
       'SELECT Status FROM HourLogs WHERE LogID = ? AND StudentID = ?',
       [logId, studentId]
@@ -252,8 +254,9 @@ const deleteLog = async (req, res) => {
       return res.status(404).json({ error: 'Log not found' });
     }
 
-    if (logs[0].Status !== 'Pending') {
-      return res.status(403).json({ error: 'Can only delete pending logs' });
+    // Can only delete pending or rejected logs, not approved
+    if (logs[0].Status === 'Approved') {
+      return res.status(403).json({ error: 'Cannot delete approved logs' });
     }
 
     // Delete log
@@ -270,19 +273,16 @@ const deleteLog = async (req, res) => {
 // Verify log (supervisor approval/rejection via email link)
 const verifyLog = async (req, res) => {
   const { token, action } = req.query;
+  const { reason } = req.body || {};
 
-  if (!token || !action) {
+  if (!token) {
     return res.status(400).send('<h1>Invalid verification link</h1>');
-  }
-
-  if (action !== 'approve' && action !== 'reject') {
-    return res.status(400).send('<h1>Invalid action</h1>');
   }
 
   try {
     // Get log details
     const [logs] = await pool.query(
-      `SELECT hl.*, s.StudentName, u.Email as StudentEmail, sup.Email as SupervisorEmail
+      `SELECT hl.*, s.StudentName, u.Email as StudentEmail, sup.Email as SupervisorEmail, sup.SupervisorName
        FROM HourLogs hl
        JOIN Students s ON hl.StudentID = s.StudentID
        JOIN Users u ON s.UserID = u.UserID
@@ -307,26 +307,45 @@ const verifyLog = async (req, res) => {
       return res.status(400).send('<h1>Verification link has expired</h1>');
     }
 
+    // If no action yet, show form (for reject with reason)
+    if (!action) {
+      return res.send(generateVerificationPage(log, token));
+    }
+
+    if (action !== 'approve' && action !== 'reject') {
+      return res.status(400).send('<h1>Invalid action</h1>');
+    }
+
     // Update status
     const newStatus = action === 'approve' ? 'Approved' : 'Rejected';
+    const rejectionReason = action === 'reject' ? reason : null;
+    
     await pool.query(
       `UPDATE HourLogs 
-       SET Status = ?, ApprovalTime = NOW(), ApprovedBy = ?
+       SET Status = ?, ApprovalTime = NOW(), ApprovedBy = ?, RejectionReason = ?
        WHERE LogID = ?`,
-      [newStatus, log.SupervisorEmail, log.LogID]
+      [newStatus, log.SupervisorEmail, rejectionReason, log.LogID]
     );
 
-    // If approved, send confirmation to student
-    if (action === 'approve') {
-      try {
+    // Send notification email to student
+    try {
+      if (action === 'approve') {
         await sendApprovalEmail(log.StudentEmail, log.StudentName, {
           activityName: log.ActivityName,
-          hours: log.Hours,
-          category: log.Category
+          category: log.Category,
+          hours: log.Hours
         });
-      } catch (emailError) {
-        console.error('Failed to send approval email:', emailError);
+      } else {
+        await sendRejectionEmail(log.StudentEmail, log.StudentName, {
+          activityName: log.ActivityName,
+          category: log.Category,
+          hours: log.Hours,
+          date: log.Date,
+          supervisorName: log.SupervisorName
+        }, rejectionReason);
       }
+    } catch (emailError) {
+      console.error('Failed to send notification email:', emailError);
     }
 
     res.send(`
@@ -334,8 +353,8 @@ const verifyLog = async (req, res) => {
       <html>
       <head>
         <style>
-          body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f5f5f5; }
-          .container { text-align: center; padding: 40px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+          body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background-color: #f5f5f5; }
+          .container { text-align: center; padding: 40px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; }
           .success { color: #28a745; }
           .rejected { color: #dc3545; }
           h1 { margin-bottom: 20px; }
@@ -349,7 +368,8 @@ const verifyLog = async (req, res) => {
           <p>Student: ${log.StudentName}</p>
           <p>Activity: ${log.ActivityName}</p>
           <p>Hours: ${log.Hours}</p>
-          <p style="margin-top: 30px; color: #666;">You can close this window.</p>
+          <p style="margin-top: 30px; color: #666;">The student has been notified by email.</p>
+          <p style="color: #666;">You can close this window.</p>
         </div>
       </body>
       </html>
@@ -360,6 +380,80 @@ const verifyLog = async (req, res) => {
     res.status(500).send('<h1>Verification failed. Please try again.</h1>');
   }
 };
+
+function generateVerificationPage(log, token) {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Verify Activity Log</title>
+      <style>
+        body { font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 30px; }
+        h1 { color: #333; margin-bottom: 10px; }
+        .info { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info p { margin: 5px 0; }
+        .buttons { display: flex; gap: 15px; margin-top: 30px; }
+        .btn { flex: 1; padding: 15px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; text-decoration: none; display: block; text-align: center; }
+        .btn-approve { background: #28a745; color: white; }
+        .btn-reject { background: #dc3545; color: white; }
+        .btn:hover { opacity: 0.9; }
+        .reject-form { display: none; margin-top: 20px; }
+        .reject-form.show { display: block; }
+        textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-family: Arial, sans-serif; margin-top: 10px; }
+        .submit-btn { background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        .cancel-btn { background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; margin-left: 10px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>Verify Activity Log</h1>
+        <p>Please review and verify this activity submission:</p>
+        
+        <div class="info">
+          <p><strong>Student:</strong> ${log.StudentName}</p>
+          <p><strong>Activity:</strong> ${log.ActivityName}</p>
+          <p><strong>Category:</strong> ${log.Category}</p>
+          <p><strong>Date:</strong> ${new Date(log.Date).toLocaleDateString()}</p>
+          <p><strong>Hours:</strong> ${log.Hours}</p>
+          ${log.Notes ? `<p><strong>Notes:</strong> ${log.Notes}</p>` : ''}
+          ${log.Proof ? `<p><strong>Proof:</strong> <a href="${log.Proof}" target="_blank">View Attachment</a></p>` : ''}
+        </div>
+
+        <div class="buttons">
+          <a href="?token=${token}&action=approve" class="btn btn-approve">✓ Approve</a>
+          <button onclick="showRejectForm()" class="btn btn-reject">✗ Reject</button>
+        </div>
+
+        <div id="rejectForm" class="reject-form">
+          <h3>Rejection Reason</h3>
+          <p>Please explain why you're rejecting this log (the student will receive this in an email):</p>
+          <form method="POST" action="?token=${token}&action=reject">
+            <textarea name="reason" rows="5" placeholder="e.g., The hours seem incorrect, or I need more information about the activity..." required></textarea>
+            <div>
+              <button type="submit" class="submit-btn">Submit Rejection</button>
+              <button type="button" onclick="hideRejectForm()" class="cancel-btn">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <script>
+        function showRejectForm() {
+          document.getElementById('rejectForm').classList.add('show');
+          document.querySelector('.buttons').style.display = 'none';
+        }
+        function hideRejectForm() {
+          document.getElementById('rejectForm').classList.remove('show');
+          document.querySelector('.buttons').style.display = 'flex';
+        }
+      </script>
+    </body>
+    </html>
+  `;
+}
 
 module.exports = {
   createLog,

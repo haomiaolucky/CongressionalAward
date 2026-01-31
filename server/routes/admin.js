@@ -5,6 +5,8 @@ const {
   approveUser,
   rejectUser,
   getAllStudents,
+  activateStudent,
+  deactivateStudent,
   getActivities,
   createActivity,
   updateActivity,
@@ -12,9 +14,15 @@ const {
   getSupervisors,
   createSupervisor,
   updateSupervisor,
+  deleteSupervisor,
+  getAdminUsers,
+  addAdminUser,
+  activateAdminUser,
+  deactivateAdminUser,
   getAdminStats,
   createActivityValidation,
-  createSupervisorValidation
+  createSupervisorValidation,
+  addAdminValidation
 } = require('../controllers/adminController');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
@@ -26,6 +34,8 @@ router.get('/pending-users', getPendingUsers);
 router.put('/approve-user/:id', approveUser);
 router.put('/reject-user/:id', rejectUser);
 router.get('/students', getAllStudents);
+router.put('/students/:id/activate', activateStudent);
+router.put('/students/:id/deactivate', deactivateStudent);
 
 // Activity management
 router.get('/activities', getActivities);
@@ -37,6 +47,13 @@ router.delete('/activities/:id', deleteActivity);
 router.get('/supervisors', getSupervisors);
 router.post('/supervisors', createSupervisorValidation, createSupervisor);
 router.put('/supervisors/:id', updateSupervisor);
+router.delete('/supervisors/:id', deleteSupervisor);
+
+// Admin users management
+router.get('/admin-users', getAdminUsers);
+router.post('/admin-users', addAdminValidation, addAdminUser);
+router.put('/admin-users/:id/activate', activateAdminUser);
+router.put('/admin-users/:id/deactivate', deactivateAdminUser);
 
 // Statistics
 router.get('/stats', getAdminStats);

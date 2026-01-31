@@ -40,6 +40,15 @@ const register = async (req, res) => {
       return res.status(409).json({ error: 'Email already registered' });
     }
 
+    // Check if email is in AdminUsers table
+    const [adminCheck] = await pool.query(
+      'SELECT Email FROM AdminUsers WHERE Email = ? AND IsActive = TRUE',
+      [email]
+    );
+
+    const isAdmin = adminCheck.length > 0;
+    const role = isAdmin ? 'Admin' : 'Student';
+
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
@@ -48,31 +57,35 @@ const register = async (req, res) => {
     await connection.beginTransaction();
 
     try {
-      // Insert into Users table (auto-approve for login)
+      // Insert into Users table
       const [userResult] = await connection.query(
         'INSERT INTO Users (Email, PasswordHash, Role, Status) VALUES (?, ?, ?, ?)',
-        [email, passwordHash, 'Student', 'Approved']
+        [email, passwordHash, role, 'Approved']
       );
 
       const userId = userResult.insertId;
 
-      // Insert into Students table (pending activation)
-      await connection.query(
-        'INSERT INTO Students (UserID, StudentName, Grade, SchoolName, ParentEmail, StartDate, Status) VALUES (?, ?, ?, ?, ?, CURDATE(), ?)',
-        [userId, studentName, grade, schoolName, parentEmail, 'Pending']
-      );
+      // Only create student profile if not admin
+      if (!isAdmin) {
+        // Insert into Students table (pending activation)
+        await connection.query(
+          'INSERT INTO Students (UserID, StudentName, Grade, SchoolName, ParentEmail, StartDate) VALUES (?, ?, ?, ?, ?, CURDATE())',
+          [userId, studentName, grade, schoolName, parentEmail]
+        );
+
+        // Send notification to admin (non-blocking)
+        sendAdminNotification(studentName, email).catch(err => {
+          console.error('Failed to send admin notification:', err);
+        });
+      }
 
       await connection.commit();
       connection.release();
 
-      // Send notification to admin (non-blocking)
-      sendAdminNotification(studentName, email).catch(err => {
-        console.error('Failed to send admin notification:', err);
-      });
-
       res.status(201).json({
-        message: 'Registration successful. You can now login!',
-        userId: userId
+        message: isAdmin ? 'Admin registration successful!' : 'Registration successful. You can now login!',
+        userId: userId,
+        role: role
       });
 
     } catch (error) {
@@ -188,10 +201,32 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
+// Check if email is admin
+const checkAdminEmail = async (req, res) => {
+  const { email } = req.body;
+  
+  if (!email) {
+    return res.json({ isAdmin: false });
+  }
+  
+  try {
+    const [adminCheck] = await pool.query(
+      'SELECT Email FROM AdminUsers WHERE Email = ? AND IsActive = TRUE',
+      [email]
+    );
+    
+    res.json({ isAdmin: adminCheck.length > 0 });
+  } catch (error) {
+    console.error('Check admin email error:', error);
+    res.json({ isAdmin: false });
+  }
+};
+
 module.exports = {
   register,
   login,
   getCurrentUser,
+  checkAdminEmail,
   registerValidation,
   loginValidation
 };

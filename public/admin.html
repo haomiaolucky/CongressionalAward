@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Congressional Award Tracker</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #ddd;
+            margin-bottom: 2rem;
+            gap: 1rem;
+        }
+        .tab {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            color: #666;
+            transition: all 0.3s;
+        }
+        .tab:hover {
+            color: #0066cc;
+        }
+        .tab.active {
+            color: #0066cc;
+            border-bottom: 3px solid #0066cc;
+            font-weight: 600;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-card h3 {
+            font-size: 2.5rem;
+            margin: 0.5rem 0;
+        }
+        .stat-card p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        .stat-card:nth-child(2) {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .stat-card:nth-child(3) {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .stat-card:nth-child(4) {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        .stat-card:nth-child(5) {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.875rem;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+        .search-filter {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .badge-active {
+            background: #28a745;
+        }
+        .badge-inactive {
+            background: #6c757d;
+        }
+        .badge-pending {
+            background: #ffc107;
+        }
+        .activity-name-expandable {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            user-select: none;
+        }
+        .activity-name-expandable:hover {
+            color: #0066cc;
+        }
+        .expand-icon {
+            display: inline-block;
+            transition: transform 0.2s;
+            font-size: 0.75rem;
+            color: #666;
+        }
+        .activity-details {
+            transition: all 0.3s ease;
+        }
+        .activity-details td {
+            animation: slideDown 0.3s ease;
+        }
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="/admin" class="navbar-brand">Congressional Award Tracker - Admin</a>
+            <ul class="navbar-menu">
+                <li><a href="/admin">Admin Dashboard</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 2rem;">
+        <div id="loading" class="text-center">
+            <div class="spinner"></div>
+            <p>Loading admin dashboard...</p>
+        </div>
+
+        <div id="content" style="display: none;">
+            <!-- Welcome Header -->
+            <div style="margin-bottom: 2rem;">
+                <h1>Admin Dashboard</h1>
+                <p style="color: #666;">Welcome, <span id="adminEmail"></span></p>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <p>Total Students</p>
+                    <h3 id="totalStudents">0</h3>
+                </div>
+                <div class="stat-card">
+                    <p>Pending Student Approvals</p>
+                    <h3 id="pendingApprovals">0</h3>
+                </div>
+                <div class="stat-card">
+                    <p>Active Activities</p>
+                    <h3 id="activeActivities">0</h3>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" data-tab="pending">Pending Approvals</button>
+                <button class="tab" data-tab="students">Students</button>
+                <button class="tab" data-tab="supervisors">Supervisors</button>
+                <button class="tab" data-tab="activities">Activities</button>
+                <button class="tab" data-tab="admins">Admin Users</button>
+            </div>
+
+            <!-- Pending Approvals Tab -->
+            <div class="tab-content active" id="pending-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Pending Student Registrations</h3>
+                    </div>
+                    <div class="card-body">
+                        <table class="table" id="pendingTable">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Grade</th>
+                                    <th>School</th>
+                                    <th>Registered</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pendingBody">
+                                <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students Tab -->
+            <div class="tab-content" id="students-tab">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3>All Students</h3>
+                        <div class="search-filter">
+                            <input type="text" id="studentSearch" class="form-control" placeholder="Search students..." style="width: 300px;">
+                            <select id="studentStatusFilter" class="form-select" style="width: 150px;">
+                                <option value="">All Status</option>
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <table class="table" id="studentsTable">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Grade</th>
+                                    <th>Level</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsBody">
+                                <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Supervisors Tab -->
+            <div class="tab-content" id="supervisors-tab">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3>Supervisors</h3>
+                        <button class="btn btn-primary" onclick="showAddSupervisorModal()">➕ Add Supervisor</button>
+                    </div>
+                    <div class="card-body">
+                        <table class="table" id="supervisorsTable">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="supervisorsBody">
+                                <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activities Tab -->
+            <div class="tab-content" id="activities-tab">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3>Activities</h3>
+                        <button class="btn btn-primary" onclick="showAddActivityModal()">➕ Add Activity</button>
+                    </div>
+                    <div class="card-body">
+                        <table class="table" id="activitiesTable">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Supervisor</th>
+                                    <th>Price</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activitiesBody">
+                                <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Users Tab -->
+            <div class="tab-content" id="admins-tab">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3>Admin Users</h3>
+                        <button class="btn btn-primary" onclick="showAddAdminModal()">➕ Add Admin</button>
+                    </div>
+                    <div class="card-body">
+                        <table class="table" id="adminsTable">
+                            <thead>
+                                <tr>
+                                    <th>Email</th>
+                                    <th>Name</th>
+                                    <th>Created By</th>
+                                    <th>Created At</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminsBody">
+                                <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Supervisor Modal -->
+    <div class="modal" id="supervisorModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="supervisorModalTitle">Add Supervisor</h3>
+                <button class="modal-close" onclick="closeSupervisorModal()">×</button>
+            </div>
+            <form id="supervisorForm">
+                <input type="hidden" id="supervisorId">
+                <div class="form-group">
+                    <label class="form-label">Name *</label>
+                    <input type="text" class="form-control" id="supervisorName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email *</label>
+                    <input type="email" class="form-control" id="supervisorEmail" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <input type="text" class="form-control" id="supervisorRole" placeholder="e.g., Teacher, Coach">
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" onclick="closeSupervisorModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Activity Modal -->
+    <div class="modal" id="activityModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="activityModalTitle">Add Activity</h3>
+                <button class="modal-close" onclick="closeActivityModal()">×</button>
+            </div>
+            <form id="activityForm">
+                <input type="hidden" id="activityId">
+                <div class="form-group">
+                    <label class="form-label">Activity Name *</label>
+                    <input type="text" class="form-control" id="activityName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category *</label>
+                    <select class="form-select" id="activityCategory" required>
+                        <option value="">Select Category</option>
+                        <option value="Volunteer">Volunteer</option>
+                        <option value="Personal Development">Personal Development</option>
+                        <option value="Physical Fitness">Physical Fitness</option>
+                        <option value="Expedition">Expedition</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Default Supervisor</label>
+                    <select class="form-select" id="activitySupervisor">
+                        <option value="">None</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" id="activityDescription" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    <input type="text" class="form-control" id="activityLocation">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Price ($)</label>
+                    <input type="number" class="form-control" id="activityPrice" min="0" step="0.01" value="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Apply Link</label>
+                    <input type="url" class="form-control" id="activityLink" placeholder="https://...">
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" onclick="closeActivityModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Admin Modal -->
+    <div class="modal" id="adminModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Admin User</h3>
+                <button class="modal-close" onclick="closeAdminModal()">×</button>
+            </div>
+            <form id="adminForm">
+                <div class="form-group">
+                    <label class="form-label">Email *</label>
+                    <input type="email" class="form-control" id="adminEmail2" required>
+                    <small class="form-text">This person can register with this email to become an admin.</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-control" id="adminName">
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" onclick="closeAdminModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/admin.js"></script>
+</body>
+</html>

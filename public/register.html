@@ -20,20 +20,18 @@
     <div class="container" style="margin-top: 3rem; max-width: 600px;">
         <div class="card">
             <div class="card-header">
-                <h2>Student Registration</h2>
+                <h2 id="formTitle">Registration</h2>
+                <p id="formSubtitle" style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;"></p>
             </div>
             <div class="card-body">
                 <div id="message"></div>
                 
                 <form id="registerForm">
-                    <div class="form-group">
-                        <label class="form-label">Student Name *</label>
-                        <input type="text" class="form-control" id="studentName" required>
-                    </div>
-
+                    <!-- Email field first for checking admin status -->
                     <div class="form-group">
                         <label class="form-label">Email *</label>
                         <input type="email" class="form-control" id="email" required>
+                        <small class="text-muted" id="emailHint">Enter your email address</small>
                     </div>
 
                     <div class="form-group">
@@ -47,28 +45,36 @@
                         <input type="password" class="form-control" id="confirmPassword" required>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Grade *</label>
-                        <select class="form-select" id="grade" required>
-                            <option value="">Select Grade</option>
-                            <option value="6">6th Grade</option>
-                            <option value="7">7th Grade</option>
-                            <option value="8">8th Grade</option>
-                            <option value="9">9th Grade</option>
-                            <option value="10">10th Grade</option>
-                            <option value="11">11th Grade</option>
-                            <option value="12">12th Grade</option>
-                        </select>
-                    </div>
+                    <!-- Student-specific fields -->
+                    <div id="studentFields">
+                        <div class="form-group">
+                            <label class="form-label">Student Name *</label>
+                            <input type="text" class="form-control" id="studentName">
+                        </div>
 
-                    <div class="form-group">
-                        <label class="form-label">School Name *</label>
-                        <input type="text" class="form-control" id="schoolName" required>
-                    </div>
+                        <div class="form-group">
+                            <label class="form-label">Grade *</label>
+                            <select class="form-select" id="grade">
+                                <option value="">Select Grade</option>
+                                <option value="6">6th Grade</option>
+                                <option value="7">7th Grade</option>
+                                <option value="8">8th Grade</option>
+                                <option value="9">9th Grade</option>
+                                <option value="10">10th Grade</option>
+                                <option value="11">11th Grade</option>
+                                <option value="12">12th Grade</option>
+                            </select>
+                        </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Parent Email *</label>
-                        <input type="email" class="form-control" id="parentEmail" required>
+                        <div class="form-group">
+                            <label class="form-label">School Name *</label>
+                            <input type="text" class="form-control" id="schoolName">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Parent Email *</label>
+                            <input type="email" class="form-control" id="parentEmail">
+                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
@@ -87,6 +93,67 @@
         const form = document.getElementById('registerForm');
         const messageDiv = document.getElementById('message');
         const submitBtn = document.getElementById('submitBtn');
+        const emailInput = document.getElementById('email');
+        const studentFields = document.getElementById('studentFields');
+        const formTitle = document.getElementById('formTitle');
+        const formSubtitle = document.getElementById('formSubtitle');
+        const emailHint = document.getElementById('emailHint');
+        
+        let isAdminEmail = false;
+
+        // Check if email is admin when user types
+        let checkEmailTimeout;
+        emailInput.addEventListener('input', () => {
+            clearTimeout(checkEmailTimeout);
+            checkEmailTimeout = setTimeout(async () => {
+                const email = emailInput.value.trim();
+                if (email && email.includes('@')) {
+                    await checkIfAdminEmail(email);
+                }
+            }, 500);
+        });
+
+        // Check if email is in AdminUsers table
+        async function checkIfAdminEmail(email) {
+            try {
+                const response = await fetch('/api/auth/check-admin-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                const result = await response.json();
+                isAdminEmail = result.isAdmin;
+                
+                if (isAdminEmail) {
+                    // Admin registration
+                    formTitle.textContent = 'Admin Registration';
+                    formSubtitle.textContent = '✨ This email is registered as an administrator';
+                    emailHint.innerHTML = '<span style="color: #28a745;">✓ Admin email detected</span>';
+                    studentFields.style.display = 'none';
+                    
+                    // Remove required attribute from student fields
+                    document.getElementById('studentName').removeAttribute('required');
+                    document.getElementById('grade').removeAttribute('required');
+                    document.getElementById('schoolName').removeAttribute('required');
+                    document.getElementById('parentEmail').removeAttribute('required');
+                } else {
+                    // Student registration
+                    formTitle.textContent = 'Student Registration';
+                    formSubtitle.textContent = '';
+                    emailHint.textContent = 'Enter your email address';
+                    studentFields.style.display = 'block';
+                    
+                    // Add required attribute to student fields
+                    document.getElementById('studentName').setAttribute('required', '');
+                    document.getElementById('grade').setAttribute('required', '');
+                    document.getElementById('schoolName').setAttribute('required', '');
+                    document.getElementById('parentEmail').setAttribute('required', '');
+                }
+            } catch (error) {
+                console.error('Error checking admin email:', error);
+            }
+        }
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -108,13 +175,23 @@
             submitBtn.textContent = 'Registering...';
 
             const data = {
-                studentName: document.getElementById('studentName').value,
                 email: document.getElementById('email').value,
-                password: password,
-                grade: parseInt(document.getElementById('grade').value),
-                schoolName: document.getElementById('schoolName').value,
-                parentEmail: document.getElementById('parentEmail').value
+                password: password
             };
+
+            // Add student fields only if not admin
+            if (!isAdminEmail) {
+                data.studentName = document.getElementById('studentName').value;
+                data.grade = parseInt(document.getElementById('grade').value);
+                data.schoolName = document.getElementById('schoolName').value;
+                data.parentEmail = document.getElementById('parentEmail').value;
+            } else {
+                // For admin, provide dummy student data (won't be saved)
+                data.studentName = 'Admin User';
+                data.grade = 12;
+                data.schoolName = 'N/A';
+                data.parentEmail = data.email;
+            }
 
             try {
                 const response = await fetch('/api/auth/register', {
@@ -128,11 +205,15 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    showMessage('Registration successful! Please wait for admin approval. You will receive an email once approved.', 'success');
+                    if (result.role === 'Admin') {
+                        showMessage('Admin registration successful! You can now login.', 'success');
+                    } else {
+                        showMessage('Registration successful! You can now login.', 'success');
+                    }
                     form.reset();
                     setTimeout(() => {
                         window.location.href = '/login';
-                    }, 3000);
+                    }, 2000);
                 } else {
                     showMessage(result.error || 'Registration failed', 'danger');
                 }

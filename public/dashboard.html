@@ -119,6 +119,7 @@
                                 <th>Hours</th>
                                 <th>Supervisor</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="logsBody">
@@ -226,6 +227,12 @@
                     <td>${log.Hours}</td>
                     <td>${log.SupervisorName}</td>
                     <td><span class="badge badge-${log.Status === 'Approved' ? 'success' : log.Status === 'Pending' ? 'warning' : 'danger'}">${log.Status}</span></td>
+                    <td>
+                        ${log.Status === 'Rejected' ? `
+                            <button class="btn btn-primary btn-sm" onclick="editLog(${log.LogID})">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteLog(${log.LogID})">Delete</button>
+                        ` : '-'}
+                    </td>
                 </tr>
             `).join('');
         }
@@ -242,6 +249,38 @@
             });
 
             displayLogs(filtered);
+        }
+
+        async function editLog(logId) {
+            const log = allLogs.find(l => l.LogID === logId);
+            if (!log) return;
+            
+            // Store log data for editing
+            localStorage.setItem('editLog', JSON.stringify(log));
+            window.location.href = '/submit-log?edit=' + logId;
+        }
+
+        async function deleteLog(logId) {
+            if (!confirm('Are you sure you want to delete this log?')) return;
+            
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`/api/logs/${logId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    alert('Log deleted successfully');
+                    location.reload();
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Failed to delete log');
+                }
+            } catch (error) {
+                console.error('Error deleting log:', error);
+                alert('Failed to delete log');
+            }
         }
 
         document.getElementById('searchInput').addEventListener('input', filterLogs);
