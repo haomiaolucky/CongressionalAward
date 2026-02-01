@@ -43,8 +43,8 @@ const sendVerificationEmail = async (supervisorEmail, supervisorName, logDetails
           .content { padding: 20px; background-color: #f9f9f9; }
           .details { background-color: white; padding: 15px; margin: 15px 0; border-left: 4px solid #0066cc; }
           .button-container { text-align: center; margin: 30px 0; }
-          .button { display: inline-block; padding: 15px 40px; text-decoration: none; border-radius: 5px; font-weight: bold; background-color: #0066cc; color: white; font-size: 16px; }
-          .button:hover { background-color: #0052a3; }
+          .button { display: inline-block; padding: 15px 40px; text-decoration: none; border-radius: 5px; font-weight: bold; background-color: #e9ecef; color: #212529; font-size: 16px; }
+          .button:hover { background-color: #dee2e6; }
           .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
         </style>
       </head>
@@ -125,8 +125,8 @@ const sendUpdateNotificationEmail = async (supervisorEmail, supervisorName, logD
           .content { padding: 20px; background-color: #f9f9f9; }
           .details { background-color: white; padding: 15px; margin: 15px 0; border-left: 4px solid #ff8800; }
           .button-container { text-align: center; margin: 30px 0; }
-          .button { display: inline-block; padding: 15px 40px; text-decoration: none; border-radius: 5px; font-weight: bold; background-color: #ff8800; color: white; font-size: 16px; }
-          .button:hover { opacity: 0.9; }
+          .button { display: inline-block; padding: 15px 40px; text-decoration: none; border-radius: 5px; font-weight: bold; background-color: #e9ecef; color: #212529; font-size: 16px; }
+          .button:hover { background-color: #dee2e6; }
           .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
         </style>
       </head>
