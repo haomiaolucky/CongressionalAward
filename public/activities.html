@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Browse Activities - Congressional Award Tracker</title>
     <link rel="stylesheet" href="/css/style.css">
+    <script src="/js/navbar.js"></script>
     <style>
         body {
             background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
@@ -199,19 +200,6 @@
     </style>
 </head>
 <body>
-    <nav class="navbar" style="background: rgba(15, 12, 41, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0, 255, 234, 0.2);">
-        <div class="container navbar-content">
-            <a href="/" class="navbar-brand" style="color: white;">
-                <img src="/image/logo.png" alt="Congressional Award Logo">
-                Congressional Award Tracker
-            </a>
-            <ul class="navbar-menu">
-                <li><a href="/activities" style="color: rgba(255, 255, 255, 0.9);">Browse Activities</a></li>
-                <li><a href="/login" style="color: rgba(255, 255, 255, 0.9);">Login</a></li>
-                <li><a href="/register" style="color: rgba(255, 255, 255, 0.9);">Register</a></li>
-            </ul>
-        </div>
-    </nav>
 
     <div class="hero">
         <div class="container">
@@ -360,6 +348,9 @@
 
         // Load activities on page load
         loadActivities();
+
+        // Load navbar for activities page
+        loadNavbar('activities');
     </script>
 </body>
 </html>

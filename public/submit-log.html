@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Submit Activity Log - Congressional Award Tracker</title>
     <link rel="stylesheet" href="/css/style.css">
+    <script src="/js/navbar.js"></script>
     <style>
         body {
             background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
@@ -58,18 +59,6 @@
     </style>
 </head>
 <body>
-    <nav class="navbar" style="background: rgba(15, 12, 41, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0, 255, 234, 0.2);">
-        <div class="container navbar-content">
-            <a href="/dashboard" class="navbar-brand" style="color: white;">
-                <img src="/image/logo.png" alt="Congressional Award Logo">
-                Congressional Award Tracker
-            </a>
-            <ul class="navbar-menu">
-                <li><a href="/dashboard" style="color: rgba(255, 255, 255, 0.9);">Dashboard</a></li>
-                <li><a href="#" id="logoutBtn" style="color: rgba(255, 255, 255, 0.9);">Logout</a></li>
-            </ul>
-        </div>
-    </nav>
 
     <div class="container" style="margin-top: 2rem; max-width: 800px;">
         <div class="card">
@@ -380,15 +369,24 @@
             window.scrollTo(0, 0);
         }
 
-        document.getElementById('logoutBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
-        });
-
         loadSupervisors();
         loadActivities();
+
+        // Load navbar for submit-log page
+        loadNavbar('dashboard');
+
+        // Setup logout handler after navbar is loaded
+        setTimeout(() => {
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login';
+                });
+            }
+        }, 100);
     </script>
 </body>
 </html>

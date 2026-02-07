@@ -5,21 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Congressional Award Tracker</title>
     <link rel="stylesheet" href="/css/style.css">
+    <script src="/js/navbar.js"></script>
 </head>
 <body style="background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); min-height: 100vh;">
-    <nav class="navbar" style="background: rgba(15, 12, 41, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0, 255, 234, 0.2);">
-        <div class="container navbar-content">
-            <a href="/" class="navbar-brand">
-                <img src="/image/logo.png" alt="Congressional Award Logo">
-                Congressional Award Tracker
-            </a>
-            <ul class="navbar-menu">
-                <li><a href="/activities">Browse Activities</a></li>
-                <li><a href="/login">Login</a></li>
-                <li><a href="/register">Register</a></li>
-            </ul>
-        </div>
-    </nav>
 
     <div class="container" style="margin-top: 3rem;">
         <div class="text-center">
@@ -383,5 +371,10 @@
             <p style="color: rgba(255, 255, 255, 0.6);">Helping students achieve their Congressional Award goals.</p>
         </div>
     </footer>
+
+    <script>
+        // Load navbar for home page
+        loadNavbar('home');
+    </script>
 </body>
 </html>
