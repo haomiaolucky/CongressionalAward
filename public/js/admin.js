@@ -851,13 +851,5 @@ function filterStudents() {
     displayStudents(filtered);
 }
 
-// Logout
-document.getElementById('logoutBtn').addEventListener('click', (e) => {
-    e.preventDefault();
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '/login';
-});
-
 // Initialize
 loadDashboard();
