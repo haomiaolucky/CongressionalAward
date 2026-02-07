@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Activities - Congressional Award Tracker</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+        }
+        .hero {
+            background: rgba(0, 255, 234, 0.05);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 255, 234, 0.2);
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(0, 255, 234, 0.5);
+        }
+        .hero p {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .filter-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 234, 0.2);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px 0 rgba(0, 255, 234, 0.1);
+            margin: 2rem auto;
+            max-width: 900px;
+        }
+        .filter-section h3 {
+            color: #fff;
+            text-shadow: 0 0 15px rgba(0, 255, 234, 0.3);
+        }
+        .filter-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .filter-btn {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid rgba(0, 255, 234, 0.3);
+            background: rgba(0, 255, 234, 0.05);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .filter-btn:hover {
+            border-color: #00ffea;
+            background: rgba(0, 255, 234, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.3);
+        }
+        .filter-btn.active {
+            background: linear-gradient(135deg, #00ffea, #00d4ff);
+            color: #0f0c29;
+            border-color: #00ffea;
+            font-weight: 600;
+            box-shadow: 0 0 20px rgba(0, 255, 234, 0.5);
+        }
+        .activities-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        .activity-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 234, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px 0 rgba(0, 255, 234, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+        }
+        .activity-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px 0 rgba(0, 255, 234, 0.2);
+            border-color: rgba(0, 255, 234, 0.4);
+        }
+        .activity-header {
+            padding: 1.5rem;
+            min-width: 250px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .activity-header.volunteer {
+            background: linear-gradient(135deg, rgba(0, 255, 234, 0.2), rgba(0, 212, 255, 0.2));
+            border-right: 2px solid #00ffea;
+        }
+        .activity-header.personal {
+            background: linear-gradient(135deg, rgba(189, 0, 255, 0.2), rgba(255, 0, 200, 0.2));
+            border-right: 2px solid #bd00ff;
+        }
+        .activity-header.fitness {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 255, 255, 0.2));
+            border-right: 2px solid #00d4ff;
+        }
+        .activity-header.expedition {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 255, 200, 0.2));
+            border-right: 2px solid #00ff88;
+        }
+        .activity-body {
+            padding: 1.5rem;
+            flex-grow: 1;
+        }
+        .activity-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0, 255, 234, 0.3);
+        }
+        .activity-category {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: rgba(0, 255, 234, 0.2);
+            border-radius: 15px;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            color: #00ffea;
+            border: 1px solid rgba(0, 255, 234, 0.3);
+        }
+        .activity-description {
+            color: rgba(255, 255, 255, 0.8);
+            margin: 1rem 0;
+            line-height: 1.6;
+        }
+        .activity-meta {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(0, 255, 234, 0.1);
+        }
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .activity-footer {
+            padding: 0 1.5rem 1.5rem;
+        }
+        .apply-btn {
+            display: block;
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #00ffea, #00d4ff);
+            color: #0f0c29;
+            text-align: center;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s;
+            font-weight: 600;
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.3);
+        }
+        .apply-btn:hover {
+            box-shadow: 0 0 25px rgba(0, 255, 234, 0.5);
+            transform: translateY(-2px);
+        }
+        .no-activities {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .no-activities h2, .no-activities h3 {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .price-tag {
+            color: #00ff88;
+            font-weight: 600;
+        }
+        .price-tag.free {
+            color: #00ff88;
+        }
+        #activityCount {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        #loading p {
+            color: rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar" style="background: rgba(15, 12, 41, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0, 255, 234, 0.2);">
+        <div class="container navbar-content">
+            <a href="/" class="navbar-brand" style="color: white;">
+                <img src="/image/logo.png" alt="Congressional Award Logo">
+                Congressional Award Tracker
+            </a>
+            <ul class="navbar-menu">
+                <li><a href="/activities" style="color: rgba(255, 255, 255, 0.9);">Browse Activities</a></li>
+                <li><a href="/login" style="color: rgba(255, 255, 255, 0.9);">Login</a></li>
+                <li><a href="/register" style="color: rgba(255, 255, 255, 0.9);">Register</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <div class="container">
+            <h1>🌟 Explore Activities</h1>
+            <p style="font-size: 1.25rem;">Discover opportunities to earn your Congressional Award</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="filter-section">
+            <h3 style="text-align: center; margin-bottom: 1.5rem;">Filter by Category</h3>
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-category="all">All Activities</button>
+                <button class="filter-btn" data-category="Volunteer">🤝 Volunteer Service</button>
+                <button class="filter-btn" data-category="Personal Development">📚 Personal Development</button>
+                <button class="filter-btn" data-category="Physical Fitness">💪 Physical Fitness</button>
+                <button class="filter-btn" data-category="Expedition">🏕️ Expedition</button>
+            </div>
+        </div>
+
+        <div id="loading" class="text-center" style="padding: 3rem;">
+            <div class="spinner"></div>
+            <p>Loading activities...</p>
+        </div>
+
+        <div id="activitiesContainer" style="display: none;">
+            <div id="activityCount" style="text-align: center; margin: 2rem 0;"></div>
+            <div class="activities-grid" id="activitiesGrid"></div>
+        </div>
+
+        <div id="noActivities" class="no-activities" style="display: none;">
+            <h2>No activities found</h2>
+            <p>Check back later for new opportunities!</p>
+        </div>
+    </div>
+
+    <footer style="background: rgba(15, 12, 41, 0.95); backdrop-filter: blur(10px); border-top: 1px solid rgba(0, 255, 234, 0.2); padding: 2rem 0; margin-top: 4rem;">
+        <div class="container text-center">
+            <p style="color: rgba(255, 255, 255, 0.9);">&copy; 2026 Congressional Award Tracker. All rights reserved.</p>
+            <p style="color: rgba(255, 255, 255, 0.6);">Helping students achieve their Congressional Award goals.</p>
+        </div>
+    </footer>
+
+    <script>
+        let allActivities = [];
+        let currentFilter = 'all';
+
+        async function loadActivities() {
+            try {
+                const response = await fetch('/api/public/activities');
+                allActivities = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                
+                if (allActivities.length === 0) {
+                    document.getElementById('noActivities').style.display = 'block';
+                } else {
+                    document.getElementById('activitiesContainer').style.display = 'block';
+                    displayActivities(allActivities);
+                }
+            } catch (error) {
+                console.error('Error loading activities:', error);
+                document.getElementById('loading').innerHTML = '<p style="color: #ff6b6b;">Failed to load activities. Please try again later.</p>';
+            }
+        }
+
+        function displayActivities(activities) {
+            const grid = document.getElementById('activitiesGrid');
+            const countDiv = document.getElementById('activityCount');
+            
+            countDiv.textContent = `Showing ${activities.length} ${activities.length === 1 ? 'activity' : 'activities'}`;
+            
+            if (activities.length === 0) {
+                grid.innerHTML = '<div class="no-activities"><h3>No activities in this category yet</h3></div>';
+                return;
+            }
+            
+            grid.innerHTML = activities.map(activity => {
+                const categoryClass = activity.Category.toLowerCase().replace(' ', '');
+                const price = parseFloat(activity.Price || 0);
+                const priceText = price === 0 ? 'FREE' : `$${price.toFixed(2)}`;
+                const priceClass = price === 0 ? 'free' : '';
+                
+                return `
+                    <div class="activity-card">
+                        <div class="activity-header ${categoryClass}">
+                            <div class="activity-category">${activity.Category}</div>
+                            <div class="activity-title">${activity.ActivityName}</div>
+                        </div>
+                        <div class="activity-body">
+                            <p class="activity-description">${activity.Description || 'Join this amazing activity to earn your Congressional Award hours!'}</p>
+                            <div class="activity-meta">
+                                ${activity.Location ? `
+                                <div class="meta-item">
+                                    <span>📍</span>
+                                    <span>${activity.Location}</span>
+                                </div>
+                                ` : ''}
+                                <div class="meta-item">
+                                    <span>💰</span>
+                                    <span class="price-tag ${priceClass}">${priceText}</span>
+                                </div>
+                                ${activity.SupervisorName ? `
+                                <div class="meta-item">
+                                    <span>👤</span>
+                                    <span>${activity.SupervisorName}</span>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        ${activity.ApplyLink ? `
+                        <div class="activity-footer">
+                            <a href="${activity.ApplyLink}" target="_blank" class="apply-btn">Learn More & Apply →</a>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterActivities(category) {
+            currentFilter = category;
+            
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.category === category) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Filter activities
+            const filtered = category === 'all' 
+                ? allActivities 
+                : allActivities.filter(a => a.Category === category);
+            
+            displayActivities(filtered);
+        }
+
+        // Event listeners for filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterActivities(btn.dataset.category);
+            });
+        });
+
+        // Load activities on page load
+        loadActivities();
+    </script>
+</body>
+</html>

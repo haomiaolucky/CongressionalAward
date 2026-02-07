@@ -233,34 +233,71 @@ const sendApprovalEmail = async (studentEmail, studentName, logDetails) => {
 };
 
 // Send admin notification for new registration
-const sendAdminNotification = async (studentName, studentEmail) => {
-  const mailOptions = {
-    from: process.env.EMAIL_FROM,
-    to: process.env.ADMIN_EMAIL,
-    subject: 'New Student Registration Pending Approval',
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <body style="font-family: Arial, sans-serif;">
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2>New Student Registration</h2>
-          <p>A new student has registered and is awaiting approval:</p>
-          <ul>
-            <li><strong>Name:</strong> ${studentName}</li>
-            <li><strong>Email:</strong> ${studentEmail}</li>
-          </ul>
-          <p><a href="${process.env.APP_URL}/admin.html">Go to Admin Panel</a></p>
-        </div>
-      </body>
-      </html>
-    `
-  };
-
+const sendAdminNotification = async (studentName, studentEmail, pool) => {
   try {
-    await transporter.sendMail(mailOptions);
-    return true;
+    // Query all active admin users from database
+    const [admins] = await pool.query(
+      'SELECT Email FROM Users WHERE Role = ? AND Status = ?',
+      ['Admin', 'Approved']
+    );
+
+    // If no admins found in database, fallback to environment variable
+    let adminEmails = admins.map(admin => admin.Email);
+    
+    if (adminEmails.length === 0 && process.env.ADMIN_EMAIL) {
+      console.warn('⚠️  No active admin users found in database, using ADMIN_EMAIL from environment');
+      adminEmails = [process.env.ADMIN_EMAIL];
+    }
+
+    if (adminEmails.length === 0) {
+      console.error('❌ No admin email configured to send notification');
+      return false;
+    }
+
+    // Prepare email content
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      subject: 'New Student Registration Pending Approval',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: Arial, sans-serif;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2>New Student Registration</h2>
+            <p>A new student has registered and is awaiting approval:</p>
+            <ul>
+              <li><strong>Name:</strong> ${studentName}</li>
+              <li><strong>Email:</strong> ${studentEmail}</li>
+            </ul>
+            <p><a href="${process.env.APP_URL}/admin.html">Go to Admin Panel</a></p>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    // Send email to each admin
+    const emailPromises = adminEmails.map(email => {
+      return transporter.sendMail({
+        ...mailOptions,
+        to: email
+      }).then(() => {
+        console.log(`✅ Admin notification sent to ${email}`);
+        return { success: true, email };
+      }).catch(error => {
+        console.error(`❌ Failed to send notification to ${email}:`, error.message);
+        return { success: false, email, error: error.message };
+      });
+    });
+
+    const results = await Promise.all(emailPromises);
+    const successCount = results.filter(r => r.success).length;
+    
+    console.log(`📧 Admin notifications: ${successCount}/${adminEmails.length} sent successfully`);
+    return successCount > 0; // Return true if at least one email was sent
+
   } catch (error) {
-    console.error('❌ Error sending admin notification:', error);
+    console.error('❌ Error sending admin notifications:', error);
     return false; // Non-critical, don't throw
   }
 };

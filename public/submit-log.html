@@ -5,14 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Submit Activity Log - Congressional Award Tracker</title>
     <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+        }
+        .container { color: rgba(255, 255, 255, 0.9); }
+        h2 { color: #fff; text-shadow: 0 0 20px rgba(0, 255, 234, 0.5); }
+        p { color: rgba(255, 255, 255, 0.8); }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 234, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 255, 234, 0.1);
+        }
+        .card-header {
+            background: rgba(0, 255, 234, 0.1);
+            border-bottom: 1px solid rgba(0, 255, 234, 0.3);
+        }
+        .card-body { background: transparent; }
+        .form-label { color: rgba(255, 255, 255, 0.9); }
+        .text-muted { color: rgba(255, 255, 255, 0.6) !important; }
+        .form-control, .form-select {
+            background: rgba(0, 255, 234, 0.05);
+            border: 1px solid rgba(0, 255, 234, 0.2);
+            color: #fff;
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(0, 255, 234, 0.1);
+            border-color: #00ffea;
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.3);
+            color: #fff;
+        }
+        .form-control::placeholder { color: rgba(255, 255, 255, 0.5); }
+        .form-select option, textarea { background: #1a1a2e; color: #fff; }
+        .btn-primary {
+            background: linear-gradient(135deg, #00ffea, #00d4ff);
+            border: none;
+            color: #0f0c29;
+            font-weight: 600;
+            box-shadow: 0 0 20px rgba(0, 255, 234, 0.5);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+        #filePreview div {
+            background: rgba(0, 255, 234, 0.05);
+            border: 1px solid rgba(0, 255, 234, 0.2) !important;
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar">
+    <nav class="navbar" style="background: rgba(15, 12, 41, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0, 255, 234, 0.2);">
         <div class="container navbar-content">
-            <a href="/dashboard" class="navbar-brand">Congressional Award Tracker</a>
+            <a href="/dashboard" class="navbar-brand" style="color: #00ffea;">Congressional Award Tracker</a>
             <ul class="navbar-menu">
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="#" id="logoutBtn">Logout</a></li>
+                <li><a href="/dashboard" style="color: rgba(255, 255, 255, 0.9);">Dashboard</a></li>
+                <li><a href="#" id="logoutBtn" style="color: rgba(255, 255, 255, 0.9);">Logout</a></li>
             </ul>
         </div>
     </nav>
@@ -28,8 +79,11 @@
                 <form id="submitForm" enctype="multipart/form-data">
                     <div class="form-group">
                         <label class="form-label">Activity Name *</label>
-                        <input type="text" class="form-control" id="activityName" required>
-                        <small class="text-muted">e.g., "Food Bank Volunteering", "Piano Practice", "Soccer Training"</small>
+                        <select class="form-select" id="activitySelect" style="margin-bottom: 10px;">
+                            <option value="">-- Select from list or enter custom below --</option>
+                        </select>
+                        <input type="text" class="form-control" id="activityName" placeholder="Or enter custom activity name" required>
+                        <small class="text-muted">Choose from the list above or type your own activity name</small>
                     </div>
 
                     <div class="row">
@@ -142,8 +196,8 @@
             
             if (editLog.Proof) {
                 filePreview.innerHTML = `
-                    <div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
-                        <p>📎 Current proof: <a href="${editLog.Proof}" target="_blank">View</a></p>
+                    <div style="padding: 10px; border-radius: 5px;">
+                        <p>📎 Current proof: <a href="${editLog.Proof}" target="_blank" style="color: #00ffea;">View</a></p>
                         <small>Upload a new file to replace it, or leave empty to keep the current proof.</small>
                     </div>
                 `;
@@ -154,6 +208,46 @@
 
         // Set max date to today
         document.getElementById('date').max = new Date().toISOString().split('T')[0];
+
+        // Load activities from database
+        let allActivities = [];
+        async function loadActivities() {
+            try {
+                const response = await fetch('/api/students/activities', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                allActivities = await response.json();
+
+                const select = document.getElementById('activitySelect');
+                select.innerHTML = '<option value="">-- Select from list or enter custom below --</option>' +
+                    allActivities.map(act => 
+                        `<option value="${act.ActivityID}" data-category="${act.Category}" data-supervisor="${act.DefaultSupervisorID || ''}">${act.ActivityName} (${act.Category})</option>`
+                    ).join('');
+            } catch (error) {
+                console.error('Error loading activities:', error);
+            }
+        }
+
+        // Handle activity selection
+        document.getElementById('activitySelect').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            
+            if (this.value) {
+                const activity = allActivities.find(a => a.ActivityID == this.value);
+                if (activity) {
+                    // Auto-fill fields
+                    document.getElementById('activityName').value = activity.ActivityName;
+                    document.getElementById('category').value = activity.Category;
+                    
+                    // Set supervisor if available - wait for supervisors to load first
+                    setTimeout(() => {
+                        if (activity.SupervisorID) {
+                            document.getElementById('supervisorId').value = activity.SupervisorID;
+                        }
+                    }, 100);
+                }
+            }
+        });
 
         // Load supervisors
         async function loadSupervisors() {
@@ -196,7 +290,7 @@
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     filePreview.innerHTML = `
-                        <div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
+                        <div style="padding: 10px; border-radius: 5px;">
                             <img src="${e.target.result}" style="max-width: 200px; max-height: 200px;">
                             <p style="margin-top: 5px; font-size: 0.9em;">${file.name} (${(file.size / 1024).toFixed(1)} KB)</p>
                         </div>
@@ -205,7 +299,7 @@
                 reader.readAsDataURL(file);
             } else {
                 filePreview.innerHTML = `
-                    <div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
+                    <div style="padding: 10px; border-radius: 5px;">
                         <p>📄 ${file.name} (${(file.size / 1024).toFixed(1)} KB)</p>
                     </div>
                 `;
@@ -291,6 +385,7 @@
         });
 
         loadSupervisors();
+        loadActivities();
     </script>
 </body>
 </html>

@@ -4,6 +4,7 @@ const token = localStorage.getItem('token');
 let allStudents = [];
 let allSupervisors = [];
 let allActivities = [];
+let allLogs = [];
 
 // Check authentication
 if (!token) {
@@ -138,7 +139,7 @@ function displayStudents(students) {
             <td>${student.Email}</td>
             <td>${student.Grade}</td>
             <td>${student.CurrentLevel || 'In Progress'}</td>
-            <td><span class="badge badge-${student.StudentStatus === 'Active' ? 'active' : 'inactive'}">${student.StudentStatus || 'Active'}</span></td>
+            <td><span class="badge badge-${student.StudentStatus === 'Active' ? 'active' : 'inactive'}">${student.StudentStatus === 'Active' ? 'Active' : 'Inactive'}</span></td>
             <td>
                 <div class="action-buttons">
                     ${student.StudentStatus !== 'Active' ? 
@@ -744,6 +745,74 @@ async function deactivateAdmin(adminId) {
     }
 }
 
+// Load hour logs
+async function loadHourLogs() {
+    try {
+        const response = await apiCall('/api/admin/logs');
+        allLogs = await response.json();
+        
+        // Populate student filter dropdown
+        const studentFilter = document.getElementById('logStudentFilter');
+        const uniqueStudents = [...new Set(allLogs.map(log => log.StudentName))].sort();
+        studentFilter.innerHTML = '<option value="">All Students</option>' +
+            uniqueStudents.map(name => `<option value="${name}">${name}</option>`).join('');
+        
+        // Populate activity filter dropdown
+        const activityFilter = document.getElementById('logActivityFilter');
+        const uniqueActivities = [...new Set(allLogs.map(log => log.ActivityName))].sort();
+        activityFilter.innerHTML = '<option value="">All Activities</option>' +
+            uniqueActivities.map(name => `<option value="${name}">${name}</option>`).join('');
+        
+        displayLogs(allLogs);
+    } catch (error) {
+        console.error('Error loading logs:', error);
+    }
+}
+
+function displayLogs(logs) {
+    const tbody = document.getElementById('logsBody');
+    
+    if (logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No logs found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = logs.map(log => `
+        <tr>
+            <td>${log.StudentName}</td>
+            <td>${log.ActivityName}</td>
+            <td>${log.Category}</td>
+            <td>${new Date(log.Date).toLocaleDateString()}</td>
+            <td>${log.Hours}</td>
+            <td>${log.SupervisorName}</td>
+            <td><span class="badge badge-${log.Status === 'Approved' ? 'active' : log.Status === 'Pending' ? 'pending' : 'inactive'}">${log.Status}</span></td>
+        </tr>
+    `).join('');
+}
+
+// Log filters
+document.getElementById('logStudentFilter').addEventListener('change', filterLogs);
+document.getElementById('logActivityFilter').addEventListener('change', filterLogs);
+document.getElementById('logCategoryFilter').addEventListener('change', filterLogs);
+document.getElementById('logStatusFilter').addEventListener('change', filterLogs);
+
+function filterLogs() {
+    const studentFilter = document.getElementById('logStudentFilter').value;
+    const activityFilter = document.getElementById('logActivityFilter').value;
+    const categoryFilter = document.getElementById('logCategoryFilter').value;
+    const statusFilter = document.getElementById('logStatusFilter').value;
+    
+    const filtered = allLogs.filter(log => {
+        const matchesStudent = !studentFilter || log.StudentName === studentFilter;
+        const matchesActivity = !activityFilter || log.ActivityName === activityFilter;
+        const matchesCategory = !categoryFilter || log.Category === categoryFilter;
+        const matchesStatus = !statusFilter || log.Status === statusFilter;
+        return matchesStudent && matchesActivity && matchesCategory && matchesStatus;
+    });
+    
+    displayLogs(filtered);
+}
+
 // Tab switching
 document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -756,6 +825,11 @@ document.querySelectorAll('.tab').forEach(tab => {
         // Update active content
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.getElementById(`${targetTab}-tab`).classList.add('active');
+        
+        // Load logs when logs tab is clicked
+        if (targetTab === 'logs' && allLogs.length === 0) {
+            loadHourLogs();
+        }
     });
 });
 

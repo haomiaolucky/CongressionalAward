@@ -5,14 +5,71 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Congressional Award Tracker</title>
     <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 234, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 255, 234, 0.1);
+        }
+        .card .card-header {
+            background: rgba(0, 255, 234, 0.1);
+            border-bottom: 1px solid rgba(0, 255, 234, 0.3);
+        }
+        .form-control, .form-select {
+            background: rgba(0, 255, 234, 0.05);
+            border: 1px solid rgba(0, 255, 234, 0.2);
+            color: #fff;
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(0, 255, 234, 0.1);
+            border-color: #00ffea;
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.3);
+            color: #fff;
+        }
+        .form-label {
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .text-muted {
+            color: rgba(255, 255, 255, 0.6) !important;
+        }
+        h2 {
+            color: #fff;
+            text-shadow: 0 0 20px rgba(0, 255, 234, 0.5);
+        }
+        #formSubtitle {
+            color: rgba(0, 255, 234, 0.9) !important;
+        }
+        a {
+            color: #00ffea;
+        }
+        a:hover {
+            color: #00d4ff;
+            text-shadow: 0 0 10px rgba(0, 255, 234, 0.5);
+        }
+        p {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .form-select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar">
+    <nav class="navbar" style="background: rgba(15, 12, 41, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0, 255, 234, 0.2);">
         <div class="container navbar-content">
-            <a href="/" class="navbar-brand">Congressional Award Tracker</a>
+            <a href="/" class="navbar-brand" style="color: white;">
+                <img src="/image/logo.png" alt="Congressional Award Logo">
+                Congressional Award Tracker
+            </a>
             <ul class="navbar-menu">
-                <li><a href="/">Home</a></li>
-                <li><a href="/login">Login</a></li>
+                <li><a href="/" style="color: rgba(255, 255, 255, 0.9);">Home</a></li>
+                <li><a href="/login" style="color: rgba(255, 255, 255, 0.9);">Login</a></li>
             </ul>
         </div>
     </nav>
@@ -36,13 +93,23 @@
 
                     <div class="form-group">
                         <label class="form-label">Password *</label>
-                        <input type="password" class="form-control" id="password" required>
+                        <div style="position: relative;">
+                            <input type="password" class="form-control" id="password" required style="padding-right: 40px;">
+                            <span onclick="togglePassword('password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none;">
+                                👁️
+                            </span>
+                        </div>
                         <small class="text-muted">At least 6 characters</small>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Confirm Password *</label>
-                        <input type="password" class="form-control" id="confirmPassword" required>
+                        <div style="position: relative;">
+                            <input type="password" class="form-control" id="confirmPassword" required style="padding-right: 40px;">
+                            <span onclick="togglePassword('confirmPassword', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none;">
+                                👁️
+                            </span>
+                        </div>
                     </div>
 
                     <!-- Student-specific fields -->
@@ -77,7 +144,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+                    <button type="submit" class="btn btn-primary btn-block" id="submitBtn" style="background: linear-gradient(135deg, #00ffea, #00d4ff); border: none; color: #0f0c29; font-weight: 600; box-shadow: 0 0 20px rgba(0, 255, 234, 0.5); transition: all 0.3s;">
                         Register
                     </button>
                 </form>
@@ -230,6 +297,18 @@
             setTimeout(() => {
                 messageDiv.innerHTML = '';
             }, 5000);
+        }
+
+        function togglePassword(inputId, eyeIcon) {
+            const passwordInput = document.getElementById(inputId);
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.textContent = '🙈';
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.textContent = '👁️';
+            }
         }
     </script>
 </body>

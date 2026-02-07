@@ -60,7 +60,7 @@ const register = async (req, res) => {
       // Insert into Users table
       const [userResult] = await connection.query(
         'INSERT INTO Users (Email, PasswordHash, Role, Status) VALUES (?, ?, ?, ?)',
-        [email, passwordHash, role, 'Approved']
+        [email, passwordHash, role, isAdmin ? 'Approved' : 'Pending']
       );
 
       const userId = userResult.insertId;
@@ -73,8 +73,8 @@ const register = async (req, res) => {
           [userId, studentName, grade, schoolName, parentEmail]
         );
 
-        // Send notification to admin (non-blocking)
-        sendAdminNotification(studentName, email).catch(err => {
+        // Send notification to all admins (non-blocking)
+        sendAdminNotification(studentName, email, pool).catch(err => {
           console.error('Failed to send admin notification:', err);
         });
       }
@@ -83,7 +83,7 @@ const register = async (req, res) => {
       connection.release();
 
       res.status(201).json({
-        message: isAdmin ? 'Admin registration successful!' : 'Registration successful. You can now login!',
+        message: isAdmin ? 'Admin registration successful!' : 'Registration successful! Please wait for admin approval before logging in.',
         userId: userId,
         role: role
       });

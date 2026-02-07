@@ -188,5 +188,6 @@ module.exports = {
   getDashboard,
   getProfile,
   updateProfile,
+  getActivities,
   getSupervisors
 };

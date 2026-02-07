@@ -7,6 +7,7 @@ const {
   getAllStudents,
   activateStudent,
   deactivateStudent,
+  getAllHourLogs,
   getActivities,
   createActivity,
   updateActivity,
@@ -36,6 +37,9 @@ router.put('/reject-user/:id', rejectUser);
 router.get('/students', getAllStudents);
 router.put('/students/:id/activate', activateStudent);
 router.put('/students/:id/deactivate', deactivateStudent);
+
+// Hour logs
+router.get('/logs', getAllHourLogs);
 
 // Activity management
 router.get('/activities', getActivities);

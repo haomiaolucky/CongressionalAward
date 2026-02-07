@@ -39,13 +39,33 @@ const approveUser = async (req, res) => {
       return res.status(400).json({ error: 'Student is not pending approval' });
     }
 
-    // Update status to approved
-    await pool.query(
-      'UPDATE Users SET Status = ? WHERE UserID = ?',
-      ['Approved', userId]
-    );
+    // Start transaction to update both Users and Students tables
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
 
-    res.json({ message: 'Student approved successfully' });
+    try {
+      // Update Users status to approved
+      await connection.query(
+        'UPDATE Users SET Status = ? WHERE UserID = ?',
+        ['Approved', userId]
+      );
+
+      // Update Students status to Active
+      await connection.query(
+        'UPDATE Students SET Status = ? WHERE UserID = ?',
+        ['Active', userId]
+      );
+
+      await connection.commit();
+      connection.release();
+
+      res.json({ message: 'Student approved and activated successfully' });
+
+    } catch (error) {
+      await connection.rollback();
+      connection.release();
+      throw error;
+    }
 
   } catch (error) {
     console.error('Approve user error:', error);
@@ -489,6 +509,42 @@ const activateAdminUser = async (req, res) => {
   }
 };
 
+// Get public activities (no auth required)
+const getPublicActivities = async (req, res) => {
+  try {
+    const [activities] = await pool.query(
+      `SELECT a.ActivityID, a.ActivityName, a.Category, a.Description, 
+       a.Location, a.Price, a.ApplyLink,
+       s.SupervisorName
+       FROM Activities a
+       LEFT JOIN Supervisors s ON a.DefaultSupervisorID = s.SupervisorID
+       WHERE a.IsActive = TRUE
+       ORDER BY a.Category, a.ActivityName`
+    );
+    res.json(activities);
+  } catch (error) {
+    console.error('Get public activities error:', error);
+    res.status(500).json({ error: 'Failed to retrieve activities' });
+  }
+};
+
+// Get all hour logs for admin
+const getAllHourLogs = async (req, res) => {
+  try {
+    const [logs] = await pool.query(`
+      SELECT hl.*, s.StudentName, sup.SupervisorName
+      FROM HourLogs hl
+      JOIN Students s ON hl.StudentID = s.StudentID
+      JOIN Supervisors sup ON hl.SupervisorID = sup.SupervisorID
+      ORDER BY hl.SubmittedAt DESC
+    `);
+    res.json(logs);
+  } catch (error) {
+    console.error('Get all logs error:', error);
+    res.status(500).json({ error: 'Failed to retrieve logs' });
+  }
+};
+
 // Get dashboard statistics
 const getAdminStats = async (req, res) => {
   try {
@@ -534,6 +590,8 @@ module.exports = {
   getAllStudents,
   activateStudent,
   deactivateStudent,
+  getAllHourLogs,
+  getPublicActivities,
   getActivities,
   createActivity,
   updateActivity,

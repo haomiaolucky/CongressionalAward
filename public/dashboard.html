@@ -6,14 +6,64 @@
     <title>Dashboard - Congressional Award Tracker</title>
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+        }
+        .container { color: rgba(255, 255, 255, 0.9); }
+        h1, h2, h3 { color: #fff; text-shadow: 0 0 20px rgba(0, 255, 234, 0.5); }
+        p { color: rgba(255, 255, 255, 0.8); }
+        strong { color: rgba(255, 255, 255, 0.95); }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 234, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 255, 234, 0.1);
+        }
+        .card-header {
+            background: rgba(0, 255, 234, 0.1);
+            border-bottom: 1px solid rgba(0, 255, 234, 0.3);
+        }
+        .card-body { background: transparent; }
+        .table { color: rgba(255, 255, 255, 0.9) !important; background: transparent !important; }
+        .table th { color: rgba(255, 255, 255, 0.9) !important; }
+        .table td { color: rgba(255, 255, 255, 0.9) !important; }
+        .table thead { background: transparent !important; border-bottom: 2px solid rgba(0, 255, 234, 0.3); }
+        .table thead tr { background: transparent !important; }
+        .table thead th { color: rgba(255, 255, 255, 0.9) !important; font-weight: 600 !important; background: transparent !important; }
+        .table tbody tr { border-bottom: 1px solid rgba(255, 255, 255, 0.1); background: transparent !important; }
+        .table tbody tr:hover { background: rgba(0, 255, 234, 0.05) !important; }
+        .text-center { color: rgba(255, 255, 255, 0.9) !important; }
+        .form-control, .form-select {
+            background: rgba(0, 255, 234, 0.05);
+            border: 1px solid rgba(0, 255, 234, 0.2);
+            color: #fff;
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(0, 255, 234, 0.1);
+            border-color: #00ffea;
+            box-shadow: 0 0 15px rgba(0, 255, 234, 0.3);
+            color: #fff;
+        }
+        .form-control::placeholder { color: rgba(255, 255, 255, 0.5); }
+        .form-select option { background: #1a1a2e; color: #fff; }
+        .btn-primary {
+            background: linear-gradient(135deg, #00ffea, #00d4ff);
+            border: none;
+            color: #0f0c29;
+            font-weight: 600;
+            box-shadow: 0 0 20px rgba(0, 255, 234, 0.5);
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar">
+    <nav class="navbar" style="background: rgba(15, 12, 41, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0, 255, 234, 0.2);">
         <div class="container navbar-content">
-            <a href="/dashboard" class="navbar-brand">Congressional Award Tracker</a>
+            <a href="/dashboard" class="navbar-brand" style="color: #00ffea;">Congressional Award Tracker</a>
             <ul class="navbar-menu">
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="#" id="logoutBtn">Logout</a></li>
+                <li><a href="/dashboard" style="color: rgba(255, 255, 255, 0.9);">Dashboard</a></li>
+                <li><a href="#" id="logoutBtn" style="color: rgba(255, 255, 255, 0.9);">Logout</a></li>
             </ul>
         </div>
     </nav>
@@ -53,7 +103,7 @@
                 <div class="col-3">
                     <div class="card">
                         <div class="card-body text-center">
-                            <h3 style="color: #0066cc;"><span id="volunteerHours">0</span>h</h3>
+                            <h3 style="color: #00ffea;"><span id="volunteerHours">0</span>h</h3>
                             <p>Volunteer Service</p>
                         </div>
                     </div>
@@ -61,7 +111,7 @@
                 <div class="col-3">
                     <div class="card">
                         <div class="card-body text-center">
-                            <h3 style="color: #28a745;"><span id="pdHours">0</span>h</h3>
+                            <h3 style="color: #00d4ff;"><span id="pdHours">0</span>h</h3>
                             <p>Personal Development</p>
                         </div>
                     </div>
@@ -69,7 +119,7 @@
                 <div class="col-3">
                     <div class="card">
                         <div class="card-body text-center">
-                            <h3 style="color: #ffc107;"><span id="pfHours">0</span>h</h3>
+                            <h3 style="color: #00ffea;"><span id="pfHours">0</span>h</h3>
                             <p>Physical Fitness</p>
                         </div>
                     </div>
@@ -77,7 +127,7 @@
                 <div class="col-3">
                     <div class="card">
                         <div class="card-body text-center">
-                            <h3 style="color: #17a2b8;"><span id="expeditions">0</span></h3>
+                            <h3 style="color: #00d4ff;"><span id="expeditions">0</span></h3>
                             <p>Expeditions</p>
                         </div>
                     </div>
@@ -124,7 +174,7 @@
                         </thead>
                         <tbody id="logsBody">
                             <tr>
-                                <td colspan="6" class="text-center">Loading...</td>
+                                <td colspan="7" class="text-center">Loading...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -202,12 +252,27 @@
                     datasets: [{
                         label: 'Hours/Events',
                         data: [hours.volunteer, hours.personalDevelopment, hours.physicalFitness, hours.expeditions],
-                        backgroundColor: ['#0066cc', '#28a745', '#ffc107', '#17a2b8']
+                        backgroundColor: ['#00ffea', '#00d4ff', '#00ffea', '#00d4ff']
                     }]
                 },
                 options: {
                     responsive: true,
-                    scales: { y: { beginAtZero: true } }
+                    scales: { 
+                        y: { 
+                            beginAtZero: true,
+                            ticks: { color: 'rgba(255, 255, 255, 0.8)' },
+                            grid: { color: 'rgba(0, 255, 234, 0.1)' }
+                        },
+                        x: {
+                            ticks: { color: 'rgba(255, 255, 255, 0.8)' },
+                            grid: { color: 'rgba(0, 255, 234, 0.1)' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: 'rgba(255, 255, 255, 0.9)' }
+                        }
+                    }
                 }
             });
         }
@@ -215,7 +280,7 @@
         function displayLogs(logs) {
             const tbody = document.getElementById('logsBody');
             if (logs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No activities yet. Click "Submit New Record" to add one!</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No activities yet. Click "Submit New Record" to add one!</td></tr>';
                 return;
             }
 

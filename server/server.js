@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth');
 const studentRoutes = require('./routes/students');
 const adminRoutes = require('./routes/admin');
 const logRoutes = require('./routes/logs');
+const { getPublicActivities } = require('./controllers/adminController');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,6 +24,9 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files
 app.use(express.static(path.join(__dirname, '../public')));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Public API (no auth required)
+app.get('/api/public/activities', getPublicActivities);
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -62,6 +66,10 @@ app.get('/pending-activation', (req, res) => {
 
 app.get('/submit-log', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/submit-log.html'));
+});
+
+app.get('/activities', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/activities.html'));
 });
 
 // 404 handler
