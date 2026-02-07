@@ -1,3 +1,8 @@
+// Check if user is logged in
+function isLoggedIn() {
+    return !!localStorage.getItem('token');
+}
+
 // Navbar Component - Unified Navigation Bar
 function createNavbar(config = {}) {
     const {
@@ -30,54 +35,83 @@ function createNavbar(config = {}) {
 // Predefined navbar configurations
 const navbarConfigs = {
     home: {
-        brandText: 'Congressional Award Tracker',
+        brandText: 'CAST Congressional Award Tracker',
         brandLink: '/',
-        menuItems: [
-            { href: '/activities', text: 'Browse Activities' },
-            { href: '/login', text: 'Login' },
-            { href: '/register', text: 'Register' }
-        ]
+        get menuItems() {
+            const loggedIn = isLoggedIn();
+            return loggedIn ? [
+                { href: '/activities', text: 'Activities' },
+                { href: '/dashboard', text: 'Dashboard' },
+                { href: '#', text: 'Logout', id: 'logoutBtn' }
+            ] : [
+                { href: '/activities', text: 'Activities' },
+                { href: '/login', text: 'Login' },
+                { href: '/register', text: 'Register' }
+            ];
+        }
     },
     
     login: {
-        brandText: 'Congressional Award Tracker',
+        brandText: 'CAST Congressional Award Tracker',
         brandLink: '/',
-        menuItems: [
-            { href: '/', text: 'Home' },
-            { href: '/register', text: 'Register' }
-        ]
+        get menuItems() {
+            const loggedIn = isLoggedIn();
+            return loggedIn ? [
+                { href: '/activities', text: 'Activities' },
+                { href: '/dashboard', text: 'Dashboard' },
+                { href: '#', text: 'Logout', id: 'logoutBtn' }
+            ] : [
+                { href: '/activities', text: 'Activities' },
+                { href: '/register', text: 'Register' }
+            ];
+        }
     },
     
     register: {
-        brandText: 'Congressional Award Tracker',
+        brandText: 'CAST Congressional Award Tracker',
         brandLink: '/',
-        menuItems: [
-            { href: '/', text: 'Home' },
-            { href: '/login', text: 'Login' }
-        ]
+        get menuItems() {
+            const loggedIn = isLoggedIn();
+            return loggedIn ? [
+                { href: '/activities', text: 'Activities' },
+                { href: '/dashboard', text: 'Dashboard' },
+                { href: '#', text: 'Logout', id: 'logoutBtn' }
+            ] : [
+                { href: '/activities', text: 'Activities' },
+                { href: '/login', text: 'Login' }
+            ];
+        }
     },
     
     activities: {
-        brandText: 'Congressional Award Tracker',
+        brandText: 'CAST Congressional Award Tracker',
         brandLink: '/',
-        menuItems: [
-            { href: '/activities', text: 'Browse Activities' },
-            { href: '/login', text: 'Login' },
-            { href: '/register', text: 'Register' }
-        ]
+        get menuItems() {
+            const loggedIn = isLoggedIn();
+            return loggedIn ? [
+                { href: '/activities', text: 'Activities' },
+                { href: '/dashboard', text: 'Dashboard' },
+                { href: '#', text: 'Logout', id: 'logoutBtn' }
+            ] : [
+                { href: '/activities', text: 'Activities' },
+                { href: '/login', text: 'Login' },
+                { href: '/register', text: 'Register' }
+            ];
+        }
     },
     
     dashboard: {
-        brandText: 'Congressional Award Tracker',
+        brandText: 'CAST Congressional Award Tracker',
         brandLink: '/dashboard',
         menuItems: [
+            { href: '/activities', text: 'Activities' },
             { href: '/dashboard', text: 'Dashboard' },
             { href: '#', text: 'Logout', id: 'logoutBtn' }
         ]
     },
     
     admin: {
-        brandText: 'Congressional Award Tracker - Admin',
+        brandText: 'CAST Congressional Award Tracker - Admin',
         brandLink: '/admin',
         menuItems: [
             { href: '/admin', text: 'Admin Dashboard' },
@@ -86,11 +120,28 @@ const navbarConfigs = {
     }
 };
 
+// Setup logout handler
+function setupLogoutHandler() {
+    setTimeout(() => {
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/';
+            });
+        }
+    }, 100);
+}
+
 // Helper function to load navbar by page type
 function loadNavbar(pageType) {
     const config = navbarConfigs[pageType];
     if (config) {
         createNavbar(config);
+        // Setup logout handler after navbar is created
+        setupLogoutHandler();
     } else {
         console.error(`Unknown page type: ${pageType}`);
     }

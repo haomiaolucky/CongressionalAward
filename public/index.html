@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Congressional Award Tracker</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/themes.css">
     <script src="/js/navbar.js"></script>
+    <script src="/js/theme-switcher.js"></script>
 </head>
-<body style="background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); min-height: 100vh;">
+<body style="min-height: 100vh;">
 
     <div class="container" style="margin-top: 3rem;">
         <div class="text-center">
@@ -378,8 +380,6 @@
         function updateCarousel() {
             const slides = document.querySelector('.level-slides');
             const indicators = document.querySelectorAll('.indicator');
-            const prevBtn = document.querySelector('.carousel-btn.prev');
-            const nextBtn = document.querySelector('.carousel-btn.next');
             
             slides.style.transform = `translateX(-${currentSlide * 100}%)`;
             
@@ -387,16 +387,21 @@
             indicators.forEach((indicator, index) => {
                 indicator.classList.toggle('active', index === currentSlide);
             });
-            
-            // Update button states
-            prevBtn.disabled = currentSlide === 0;
-            nextBtn.disabled = currentSlide === totalSlides - 1;
         }
         
         function changeSlide(direction) {
             currentSlide += direction;
-            if (currentSlide < 0) currentSlide = 0;
-            if (currentSlide >= totalSlides) currentSlide = totalSlides - 1;
+            
+            // Loop to beginning if going forward from last slide
+            if (currentSlide >= totalSlides) {
+                currentSlide = 0;
+            }
+            
+            // Loop to end if going backward from first slide
+            if (currentSlide < 0) {
+                currentSlide = totalSlides - 1;
+            }
+            
             updateCarousel();
         }
         

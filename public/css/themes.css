@@ -1,0 +1,578 @@
+/* Theme System - Congressional Award Tracker */
+
+/* ==================== Dark Tech Theme (Default) ==================== */
+:root[data-theme="dark"], :root {
+    /* Background Colors */
+    --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    --bg-primary: rgba(15, 12, 41, 0.95);
+    --bg-secondary: rgba(255, 255, 255, 0.05);
+    
+    /* Border & Shadow Colors */
+    --border-primary: rgba(0, 255, 234, 0.2);
+    --border-secondary: rgba(0, 255, 234, 0.3);
+    --shadow-primary: 0 8px 32px 0 rgba(0, 255, 234, 0.1);
+    --shadow-glow: 0 0 20px rgba(0, 255, 234, 0.5);
+    
+    /* Text Colors */
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.9);
+    --text-muted: rgba(255, 255, 255, 0.6);
+    --text-heading: #fff;
+    --text-shadow: 0 0 20px rgba(0, 255, 234, 0.5);
+    
+    /* Accent Colors */
+    --accent-primary: #00ffea;
+    --accent-secondary: #00d4ff;
+    --accent-gradient: linear-gradient(135deg, #00ffea, #00d4ff);
+    
+    /* Card Colors */
+    --card-bg: rgba(255, 255, 255, 0.05);
+    --card-border: rgba(0, 255, 234, 0.2);
+    --card-header-bg: rgba(0, 255, 234, 0.1);
+    
+    /* Form Elements */
+    --input-bg: rgba(0, 255, 234, 0.05);
+    --input-border: rgba(0, 255, 234, 0.2);
+    --input-focus-bg: rgba(0, 255, 234, 0.1);
+    --input-focus-border: #00ffea;
+    --input-focus-shadow: 0 0 15px rgba(0, 255, 234, 0.3);
+    
+    /* Button */
+    --btn-primary-bg: linear-gradient(135deg, #00ffea, #00d4ff);
+    --btn-primary-text: #0f0c29;
+    --btn-primary-shadow: 0 0 20px rgba(0, 255, 234, 0.5);
+    
+    /* Category Colors */
+    --color-volunteer: #00ffea;
+    --color-personal: #bd00ff;
+    --color-fitness: #00d4ff;
+    --color-expedition: #00ff88;
+}
+
+/* ==================== Light Minimal Theme ==================== */
+:root[data-theme="light"] {
+    /* Background Colors */
+    --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    --bg-primary: rgba(255, 255, 255, 0.95);
+    --bg-secondary: rgba(255, 255, 255, 0.8);
+    
+    /* Border & Shadow Colors */
+    --border-primary: rgba(99, 102, 241, 0.3);
+    --border-secondary: rgba(99, 102, 241, 0.4);
+    --shadow-primary: 0 4px 12px 0 rgba(0, 0, 0, 0.15);
+    --shadow-glow: 0 0 10px rgba(99, 102, 241, 0.4);
+    
+    /* Text Colors */
+    --text-primary: #111827;
+    --text-secondary: #1f2937;
+    --text-muted: #4b5563;
+    --text-heading: #000000;
+    --text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    
+    /* Accent Colors */
+    --accent-primary: #6366f1;
+    --accent-secondary: #4f46e5;
+    --accent-gradient: linear-gradient(135deg, #6366f1, #4f46e5);
+    
+    /* Card Colors */
+    --card-bg: rgba(255, 255, 255, 0.95);
+    --card-border: rgba(99, 102, 241, 0.5);
+    --card-header-bg: rgba(99, 102, 241, 0.08);
+    
+    /* Form Elements */
+    --input-bg: rgba(255, 255, 255, 0.9);
+    --input-border: rgba(203, 213, 225, 0.8);
+    --input-focus-bg: #ffffff;
+    --input-focus-border: #6366f1;
+    --input-focus-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    
+    /* Button */
+    --btn-primary-bg: linear-gradient(135deg, #6366f1, #4f46e5);
+    --btn-primary-text: #ffffff;
+    --btn-primary-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    
+    /* Category Colors */
+    --color-volunteer: #8b5cf6;
+    --color-personal: #ec4899;
+    --color-fitness: #06b6d4;
+    --color-expedition: #10b981;
+}
+
+/* ==================== Theme Toggle Button ==================== */
+.theme-toggle {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 1000;
+    background: var(--card-bg);
+    border: 2px solid var(--border-primary);
+    border-radius: 30px;
+    padding: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-primary);
+}
+
+.theme-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all 0.3s;
+}
+
+.theme-btn:hover {
+    transform: scale(1.1);
+    border-color: var(--accent-primary);
+}
+
+.theme-btn.active {
+    background: var(--accent-gradient);
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-glow);
+}
+
+/* ==================== Apply Theme Variables ==================== */
+body {
+    background: var(--bg-gradient) !important;
+    color: var(--text-primary) !important;
+    transition: all 0.3s ease;
+}
+
+.card {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    box-shadow: var(--shadow-primary) !important;
+    backdrop-filter: blur(10px);
+}
+
+.card-header {
+    background: var(--card-header-bg) !important;
+    border-bottom: 1px solid var(--border-secondary) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-heading) !important;
+    text-shadow: var(--text-shadow) !important;
+}
+
+p, span, td, th, li, label {
+    color: var(--text-secondary) !important;
+}
+
+.text-muted, small {
+    color: var(--text-muted) !important;
+}
+
+.form-control, .form-select {
+    background: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
+    color: var(--text-primary) !important;
+}
+
+.form-control:focus, .form-select:focus {
+    background: var(--input-focus-bg) !important;
+    border-color: var(--input-focus-border) !important;
+    box-shadow: var(--input-focus-shadow) !important;
+    color: var(--text-primary) !important;
+}
+
+.btn-primary {
+    background: var(--btn-primary-bg) !important;
+    color: var(--btn-primary-text) !important;
+    box-shadow: var(--btn-primary-shadow) !important;
+    border: none !important;
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
+
+/* Navbar with theme */
+.navbar {
+    background: var(--bg-primary) !important;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-primary) !important;
+}
+
+.navbar a {
+    color: var(--text-secondary) !important;
+    font-size: 1.1rem !important;
+    font-weight: 500 !important;
+    padding: 0.5rem 1rem !important;
+}
+
+.navbar a:hover {
+    color: var(--accent-primary) !important;
+}
+
+.navbar-brand {
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+}
+
+/* Footer with theme */
+footer {
+    background: var(--bg-primary) !important;
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border-primary) !important;
+}
+
+/* Category-specific colors */
+.requirement {
+    border: 2px solid !important;
+    border-left: 4px solid !important;
+}
+
+.requirement.volunteer {
+    border-color: var(--color-volunteer) !important;
+    border-left-color: var(--color-volunteer) !important;
+}
+
+.requirement.personal {
+    border-color: var(--color-personal) !important;
+    border-left-color: var(--color-personal) !important;
+}
+
+.requirement.fitness {
+    border-color: var(--color-fitness) !important;
+    border-left-color: var(--color-fitness) !important;
+}
+
+.requirement.expedition {
+    border-color: var(--color-expedition) !important;
+    border-left-color: var(--color-expedition) !important;
+}
+
+.requirement-value {
+    color: var(--accent-primary) !important;
+    font-weight: 700 !important;
+}
+
+.requirement-label {
+    color: var(--text-secondary) !important;
+    font-weight: 600 !important;
+}
+
+/* Section header underline */
+.section-header::after {
+    background: var(--accent-gradient) !important;
+    box-shadow: var(--shadow-glow) !important;
+    height: 5px !important;
+}
+
+/* Light theme specific enhancements */
+:root[data-theme="light"] .level-item {
+    border: 2px solid rgba(99, 102, 241, 0.4) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+}
+
+:root[data-theme="light"] .level-title {
+    color: #000000 !important;
+    font-weight: 700 !important;
+}
+
+:root[data-theme="light"] .requirement {
+    background: rgba(255, 255, 255, 0.8) !important;
+}
+
+:root[data-theme="light"] .section-header {
+    color: #000000 !important;
+    font-weight: 800 !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Activities Page - Light theme enhancements */
+:root[data-theme="light"] .hero {
+    background: rgba(99, 102, 241, 0.1) !important;
+    border-bottom: 2px solid rgba(99, 102, 241, 0.3) !important;
+}
+
+:root[data-theme="light"] .hero h1 {
+    color: #000000 !important;
+    font-weight: 800 !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+}
+
+:root[data-theme="light"] .hero p {
+    color: #1f2937 !important;
+    font-weight: 600 !important;
+}
+
+:root[data-theme="light"] .filter-section {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 2px solid rgba(99, 102, 241, 0.4) !important;
+}
+
+:root[data-theme="light"] .filter-section h3 {
+    color: #000000 !important;
+    font-weight: 700 !important;
+    text-shadow: none !important;
+}
+
+:root[data-theme="light"] .filter-btn {
+    border: 2px solid rgba(99, 102, 241, 0.4) !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: #1f2937 !important;
+    font-weight: 600 !important;
+}
+
+:root[data-theme="light"] .filter-btn:hover {
+    border-color: #6366f1 !important;
+    background: rgba(99, 102, 241, 0.1) !important;
+    color: #000000 !important;
+}
+
+:root[data-theme="light"] .filter-btn.active {
+    background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+    color: #ffffff !important;
+    border-color: #6366f1 !important;
+}
+
+:root[data-theme="light"] .activity-card {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 2px solid rgba(99, 102, 241, 0.3) !important;
+}
+
+:root[data-theme="light"] .activity-card:hover {
+    border-color: rgba(99, 102, 241, 0.6) !important;
+}
+
+:root[data-theme="light"] .activity-header {
+    border-right: 3px solid !important;
+}
+
+:root[data-theme="light"] .activity-header.volunteer {
+    background: rgba(139, 92, 246, 0.15) !important;
+    border-right-color: #8b5cf6 !important;
+}
+
+:root[data-theme="light"] .activity-header.personal {
+    background: rgba(236, 72, 153, 0.15) !important;
+    border-right-color: #ec4899 !important;
+}
+
+:root[data-theme="light"] .activity-header.fitness {
+    background: rgba(6, 182, 212, 0.15) !important;
+    border-right-color: #06b6d4 !important;
+}
+
+:root[data-theme="light"] .activity-header.expedition {
+    background: rgba(16, 185, 129, 0.15) !important;
+    border-right-color: #10b981 !important;
+}
+
+:root[data-theme="light"] .activity-title {
+    color: #000000 !important;
+    font-weight: 700 !important;
+    text-shadow: none !important;
+}
+
+:root[data-theme="light"] .activity-category {
+    background: rgba(99, 102, 241, 0.15) !important;
+    border: 1px solid rgba(99, 102, 241, 0.4) !important;
+    color: #4f46e5 !important;
+    font-weight: 600 !important;
+}
+
+:root[data-theme="light"] .activity-description {
+    color: #1f2937 !important;
+    font-weight: 500 !important;
+}
+
+:root[data-theme="light"] .activity-meta {
+    color: #4b5563 !important;
+    border-top: 1px solid rgba(99, 102, 241, 0.2) !important;
+}
+
+:root[data-theme="light"] .meta-item {
+    color: #1f2937 !important;
+    font-weight: 600 !important;
+}
+
+:root[data-theme="light"] .price-tag {
+    color: #10b981 !important;
+    font-weight: 700 !important;
+}
+
+:root[data-theme="light"] .apply-btn {
+    background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+    color: #ffffff !important;
+}
+
+:root[data-theme="light"] #activityCount {
+    color: #1f2937 !important;
+    font-weight: 600 !important;
+}
+
+:root[data-theme="light"] #loading p {
+    color: #1f2937 !important;
+    font-weight: 600 !important;
+}
+
+/* Dashboard table enhancements for light theme */
+:root[data-theme="light"] .table tbody td {
+    color: #1f2937 !important;
+    font-weight: 500 !important;
+}
+
+:root[data-theme="light"] .table thead th {
+    color: #000000 !important;
+    font-weight: 700 !important;
+}
+
+:root[data-theme="light"] #searchInput,
+:root[data-theme="light"] #filterCategory {
+    color: #1f2937 !important;
+    font-weight: 500 !important;
+}
+
+:root[data-theme="light"] #searchInput::placeholder {
+    color: #6b7280 !important;
+    font-weight: 500 !important;
+    opacity: 1 !important;
+}
+
+:root[data-theme="light"] .form-control::placeholder {
+    color: #6b7280 !important;
+    opacity: 1 !important;
+}
+
+/* Admin Dashboard - Light theme enhancements */
+:root[data-theme="light"] .tab {
+    color: #6b7280 !important;
+}
+
+:root[data-theme="light"] .tab:hover {
+    color: #4f46e5 !important;
+}
+
+:root[data-theme="light"] .tab.active {
+    color: #4f46e5 !important;
+    border-bottom-color: #4f46e5 !important;
+    font-weight: 700 !important;
+}
+
+:root[data-theme="light"] .stat-card h3,
+:root[data-theme="light"] .stat-card p {
+    color: #ffffff !important;
+}
+
+:root[data-theme="light"] #adminEmail {
+    color: #6b7280 !important;
+}
+
+:root[data-theme="light"] .no-activities h2,
+:root[data-theme="light"] .no-activities h3,
+:root[data-theme="light"] .no-activities p {
+    color: #1f2937 !important;
+    font-weight: 600 !important;
+}
+
+/* Dashboard Page - Light theme enhancements */
+:root[data-theme="light"] #studentName,
+:root[data-theme="light"] #email,
+:root[data-theme="light"] #grade,
+:root[data-theme="light"] #school,
+:root[data-theme="light"] #startDate {
+    color: #1f2937 !important;
+    font-weight: 600 !important;
+}
+
+:root[data-theme="light"] .card-body strong {
+    color: #000000 !important;
+    font-weight: 700 !important;
+}
+
+:root[data-theme="light"] .card-body p {
+    color: #1f2937 !important;
+}
+
+:root[data-theme="light"] #volunteerHours,
+:root[data-theme="light"] #pdHours,
+:root[data-theme="light"] #pfHours,
+:root[data-theme="light"] #expeditions {
+    color: #6366f1 !important;
+    font-weight: 700 !important;
+}
+
+:root[data-theme="light"] .card-body h3 {
+    color: #000000 !important;
+    font-weight: 700 !important;
+}
+
+:root[data-theme="light"] #currentLevel {
+    background: #10b981 !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+:root[data-theme="light"] #loading p {
+    color: #1f2937 !important;
+    font-weight: 600 !important;
+}
+
+/* Carousel buttons */
+.carousel-btn {
+    background: var(--input-bg) !important;
+    border: 2px solid var(--border-secondary) !important;
+    color: var(--accent-primary) !important;
+}
+
+.carousel-btn:hover:not(:disabled) {
+    background: var(--input-focus-bg) !important;
+    box-shadow: var(--shadow-glow) !important;
+}
+
+/* Indicators */
+.indicator {
+    background: var(--input-bg) !important;
+    border: 2px solid var(--border-secondary) !important;
+}
+
+.indicator.active {
+    background: var(--accent-primary) !important;
+    box-shadow: var(--shadow-glow) !important;
+}
+
+.indicator:hover {
+    background: var(--input-focus-bg) !important;
+}
+
+/* Table styling */
+.table {
+    color: var(--text-secondary) !important;
+}
+
+.table th {
+    color: var(--text-heading) !important;
+}
+
+.table tbody tr:hover {
+    background: var(--card-header-bg) !important;
+}
+
+/* Badge colors for light theme */
+:root[data-theme="light"] .badge-success {
+    background: #10b981 !important;
+    color: #ffffff !important;
+}
+
+:root[data-theme="light"] .badge-warning {
+    background: #f59e0b !important;
+    color: #ffffff !important;
+}
+
+:root[data-theme="light"] .badge-danger {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+}
