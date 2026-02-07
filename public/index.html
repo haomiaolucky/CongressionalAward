@@ -11,38 +11,11 @@
 
     <div class="container" style="margin-top: 3rem;">
         <div class="text-center">
-            <h1 style="color: #fff; text-shadow: 0 0 20px rgba(0, 255, 234, 0.5);">Welcome to Congressional Award Tracker</h1>
+            <h1 style="color: #fff; text-shadow: 0 0 20px rgba(0, 255, 234, 0.5);">Welcome to Chinese Association for Science and Technology Congressional Award Tracker</h1>
             <p style="font-size: 1.25rem; max-width: 800px; margin: 2rem auto; color: rgba(255, 255, 255, 0.8);">
                 Track your volunteer hours, personal development, physical fitness activities, 
                 and expeditions to achieve your Congressional Award goals.
             </p>
-        </div>
-
-        <div class="row" style="margin-top: 3rem;">
-            <div class="col-4">
-                <div class="card text-center" style="background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(0, 255, 234, 0.2); box-shadow: 0 8px 32px 0 rgba(0, 255, 234, 0.1);">
-                    <div class="card-body">
-                        <h3 style="color: #00ffea;">📊 Track Progress</h3>
-                        <p style="color: rgba(255, 255, 255, 0.8);">Monitor your hours across all four categories and see your progress toward each award level.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-4">
-                <div class="card text-center" style="background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(0, 255, 234, 0.2); box-shadow: 0 8px 32px 0 rgba(0, 255, 234, 0.1);">
-                    <div class="card-body">
-                        <h3 style="color: #00ffea;">✅ Easy Verification</h3>
-                        <p style="color: rgba(255, 255, 255, 0.8);">Supervisors receive email notifications to approve your activities quickly and efficiently.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-4">
-                <div class="card text-center" style="background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(0, 255, 234, 0.2); box-shadow: 0 8px 32px 0 rgba(0, 255, 234, 0.1);">
-                    <div class="card-body">
-                        <h3 style="color: #00ffea;">🎯 Achieve Goals</h3>
-                        <p style="color: rgba(255, 255, 255, 0.8);">Work toward Bronze, Silver, and Gold levels of certificates and medals.</p>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <style>
@@ -51,6 +24,16 @@
                 max-width: 1200px;
                 margin-left: auto;
                 margin-right: auto;
+                position: relative;
+            }
+            .carousel-wrapper {
+                position: relative;
+                overflow: hidden;
+                padding: 0 60px;
+            }
+            .level-slides {
+                display: flex;
+                transition: transform 0.5s ease-in-out;
             }
             .level-item {
                 background: rgba(255, 255, 255, 0.05);
@@ -58,24 +41,70 @@
                 border: 1px solid rgba(0, 255, 234, 0.2);
                 border-radius: 12px;
                 padding: 2rem;
-                margin-bottom: 1.5rem;
                 box-shadow: 0 8px 32px 0 rgba(0, 255, 234, 0.1);
-                opacity: 0;
-                transform: translateY(30px);
-                animation: fadeInUp 0.6s ease forwards;
+                min-width: 100%;
+                flex-shrink: 0;
             }
-            .level-item:nth-child(1) { animation-delay: 0.1s; }
-            .level-item:nth-child(2) { animation-delay: 0.2s; }
-            .level-item:nth-child(3) { animation-delay: 0.3s; }
-            .level-item:nth-child(4) { animation-delay: 0.4s; }
-            .level-item:nth-child(5) { animation-delay: 0.5s; }
-            .level-item:nth-child(6) { animation-delay: 0.6s; }
-            .level-item:nth-child(7) { animation-delay: 0.7s; }
-            @keyframes fadeInUp {
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
+            .carousel-btn {
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                background: rgba(0, 255, 234, 0.2);
+                border: 2px solid rgba(0, 255, 234, 0.5);
+                color: #00ffea;
+                font-size: 2rem;
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s;
+                z-index: 10;
+                backdrop-filter: blur(10px);
+            }
+            .carousel-btn:hover {
+                background: rgba(0, 255, 234, 0.4);
+                box-shadow: 0 0 20px rgba(0, 255, 234, 0.5);
+                transform: translateY(-50%) scale(1.1);
+            }
+            .carousel-btn:disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
+            }
+            .carousel-btn:disabled:hover {
+                transform: translateY(-50%) scale(1);
+                box-shadow: none;
+            }
+            .carousel-btn.prev {
+                left: 0;
+            }
+            .carousel-btn.next {
+                right: 0;
+            }
+            .carousel-indicators {
+                display: flex;
+                justify-content: center;
+                gap: 0.5rem;
+                margin-top: 1.5rem;
+            }
+            .indicator {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: rgba(0, 255, 234, 0.3);
+                border: 2px solid rgba(0, 255, 234, 0.5);
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+            .indicator.active {
+                background: #00ffea;
+                box-shadow: 0 0 10px rgba(0, 255, 234, 0.8);
+                transform: scale(1.2);
+            }
+            .indicator:hover {
+                background: rgba(0, 255, 234, 0.6);
             }
             .level-header {
                 display: flex;
@@ -132,49 +161,6 @@
                 color: rgba(255, 255, 255, 0.7);
                 margin-top: 0.25rem;
             }
-            .arrow-down {
-                text-align: center;
-                font-size: 4rem;
-                color: #00ffea;
-                margin: 1rem 0;
-                animation: bounce 2s infinite, neonGlow 2s ease-in-out infinite alternate;
-                text-shadow: 
-                    0 0 10px #00ffea,
-                    0 0 20px #00ffea,
-                    0 0 30px #00ffea,
-                    0 0 40px #00d4ff,
-                    0 0 70px #00d4ff,
-                    0 0 80px #00d4ff,
-                    0 0 100px #00d4ff;
-                filter: brightness(1.2);
-            }
-            @keyframes bounce {
-                0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-                40% { transform: translateY(-15px); }
-                60% { transform: translateY(-8px); }
-            }
-            @keyframes neonGlow {
-                from {
-                    text-shadow: 
-                        0 0 10px #667eea,
-                        0 0 20px #667eea,
-                        0 0 30px #667eea,
-                        0 0 40px #764ba2,
-                        0 0 70px #764ba2,
-                        0 0 80px #764ba2,
-                        0 0 100px #764ba2;
-                }
-                to {
-                    text-shadow: 
-                        0 0 20px #667eea,
-                        0 0 30px #764ba2,
-                        0 0 40px #764ba2,
-                        0 0 50px #f093fb,
-                        0 0 80px #f093fb,
-                        0 0 90px #f093fb,
-                        0 0 120px #f093fb;
-                }
-            }
             .section-header {
                 text-align: center;
                 font-size: 2rem;
@@ -199,164 +185,176 @@
         <div class="levels-container">
             <div class="section-header">🏆 Congressional Award Levels</div>
             
-            <div class="level-item">
-                <div class="level-header">
-                    <div class="level-badge bronze-cert">🥉</div>
-                    <div class="level-title">Bronze Certificate</div>
-                </div>
-                <div class="level-requirements">
-                    <div class="requirement volunteer">
-                        <div class="requirement-value">30 hours</div>
-                        <div class="requirement-label">Volunteer Service</div>
+            <div class="carousel-wrapper">
+                <button class="carousel-btn prev" onclick="changeSlide(-1)">‹</button>
+                <button class="carousel-btn next" onclick="changeSlide(1)">›</button>
+                
+                <div class="level-slides">
+                    <!-- Slide 1: Bronze Certificate -->
+                    <div class="level-item">
+                        <div class="level-header">
+                            <div class="level-badge bronze-cert">🥉</div>
+                            <div class="level-title">Bronze Certificate</div>
+                        </div>
+                        <div class="level-requirements">
+                            <div class="requirement volunteer">
+                                <div class="requirement-value">30 hours</div>
+                                <div class="requirement-label">Volunteer Service</div>
+                            </div>
+                            <div class="requirement personal">
+                                <div class="requirement-value">15 hours</div>
+                                <div class="requirement-label">Personal Development</div>
+                            </div>
+                            <div class="requirement fitness">
+                                <div class="requirement-value">15 hours</div>
+                                <div class="requirement-label">Physical Fitness</div>
+                            </div>
+                            <div class="requirement expedition">
+                                <div class="requirement-value">1</div>
+                                <div class="requirement-label">Expedition</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="requirement personal">
-                        <div class="requirement-value">15 hours</div>
-                        <div class="requirement-label">Personal Development</div>
+
+                    <!-- Slide 2: Silver Certificate -->
+                    <div class="level-item">
+                        <div class="level-header">
+                            <div class="level-badge silver-cert">🥈</div>
+                            <div class="level-title">Silver Certificate</div>
+                        </div>
+                        <div class="level-requirements">
+                            <div class="requirement volunteer">
+                                <div class="requirement-value">60 hours</div>
+                                <div class="requirement-label">Volunteer Service</div>
+                            </div>
+                            <div class="requirement personal">
+                                <div class="requirement-value">30 hours</div>
+                                <div class="requirement-label">Personal Development</div>
+                            </div>
+                            <div class="requirement fitness">
+                                <div class="requirement-value">30 hours</div>
+                                <div class="requirement-label">Physical Fitness</div>
+                            </div>
+                            <div class="requirement expedition">
+                                <div class="requirement-value">2</div>
+                                <div class="requirement-label">Expeditions</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="requirement fitness">
-                        <div class="requirement-value">15 hours</div>
-                        <div class="requirement-label">Physical Fitness</div>
+
+                    <!-- Slide 3: Gold Certificate -->
+                    <div class="level-item">
+                        <div class="level-header">
+                            <div class="level-badge gold-cert">🥇</div>
+                            <div class="level-title">Gold Certificate</div>
+                        </div>
+                        <div class="level-requirements">
+                            <div class="requirement volunteer">
+                                <div class="requirement-value">90 hours</div>
+                                <div class="requirement-label">Volunteer Service</div>
+                            </div>
+                            <div class="requirement personal">
+                                <div class="requirement-value">45 hours</div>
+                                <div class="requirement-label">Personal Development</div>
+                            </div>
+                            <div class="requirement fitness">
+                                <div class="requirement-value">45 hours</div>
+                                <div class="requirement-label">Physical Fitness</div>
+                            </div>
+                            <div class="requirement expedition">
+                                <div class="requirement-value">3</div>
+                                <div class="requirement-label">Expeditions</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="requirement expedition">
-                        <div class="requirement-value">1</div>
-                        <div class="requirement-label">Expedition</div>
+
+                    <!-- Slide 4: Bronze Medal -->
+                    <div class="level-item">
+                        <div class="level-header">
+                            <div class="level-badge bronze-medal">🏅</div>
+                            <div class="level-title">Bronze Medal</div>
+                        </div>
+                        <div class="level-requirements">
+                            <div class="requirement volunteer">
+                                <div class="requirement-value">100 hours</div>
+                                <div class="requirement-label">Volunteer Service</div>
+                            </div>
+                            <div class="requirement personal">
+                                <div class="requirement-value">50 hours</div>
+                                <div class="requirement-label">Personal Development</div>
+                            </div>
+                            <div class="requirement fitness">
+                                <div class="requirement-value">50 hours</div>
+                                <div class="requirement-label">Physical Fitness</div>
+                            </div>
+                            <div class="requirement expedition">
+                                <div class="requirement-value">1+ night</div>
+                                <div class="requirement-label">Expedition</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 5: Silver Medal -->
+                    <div class="level-item">
+                        <div class="level-header">
+                            <div class="level-badge silver-medal">🏅</div>
+                            <div class="level-title">Silver Medal</div>
+                        </div>
+                        <div class="level-requirements">
+                            <div class="requirement volunteer">
+                                <div class="requirement-value">200 hours</div>
+                                <div class="requirement-label">Volunteer Service</div>
+                            </div>
+                            <div class="requirement personal">
+                                <div class="requirement-value">100 hours</div>
+                                <div class="requirement-label">Personal Development</div>
+                            </div>
+                            <div class="requirement fitness">
+                                <div class="requirement-value">100 hours</div>
+                                <div class="requirement-label">Physical Fitness</div>
+                            </div>
+                            <div class="requirement expedition">
+                                <div class="requirement-value">2+ nights</div>
+                                <div class="requirement-label">Expedition</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 6: Gold Medal -->
+                    <div class="level-item">
+                        <div class="level-header">
+                            <div class="level-badge gold-medal">🏅</div>
+                            <div class="level-title">Gold Medal</div>
+                        </div>
+                        <div class="level-requirements">
+                            <div class="requirement volunteer">
+                                <div class="requirement-value">400 hours</div>
+                                <div class="requirement-label">Volunteer Service</div>
+                            </div>
+                            <div class="requirement personal">
+                                <div class="requirement-value">200 hours</div>
+                                <div class="requirement-label">Personal Development</div>
+                            </div>
+                            <div class="requirement fitness">
+                                <div class="requirement-value">200 hours</div>
+                                <div class="requirement-label">Physical Fitness</div>
+                            </div>
+                            <div class="requirement expedition">
+                                <div class="requirement-value">4+ nights</div>
+                                <div class="requirement-label">Expedition</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <div class="arrow-down">↓</div>
-
-            <div class="level-item">
-                <div class="level-header">
-                    <div class="level-badge silver-cert">🥈</div>
-                    <div class="level-title">Silver Certificate</div>
-                </div>
-                <div class="level-requirements">
-                    <div class="requirement volunteer">
-                        <div class="requirement-value">60 hours</div>
-                        <div class="requirement-label">Volunteer Service</div>
-                    </div>
-                    <div class="requirement personal">
-                        <div class="requirement-value">30 hours</div>
-                        <div class="requirement-label">Personal Development</div>
-                    </div>
-                    <div class="requirement fitness">
-                        <div class="requirement-value">30 hours</div>
-                        <div class="requirement-label">Physical Fitness</div>
-                    </div>
-                    <div class="requirement expedition">
-                        <div class="requirement-value">2</div>
-                        <div class="requirement-label">Expeditions</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="arrow-down">↓</div>
-
-            <div class="level-item">
-                <div class="level-header">
-                    <div class="level-badge gold-cert">🥇</div>
-                    <div class="level-title">Gold Certificate</div>
-                </div>
-                <div class="level-requirements">
-                    <div class="requirement volunteer">
-                        <div class="requirement-value">90 hours</div>
-                        <div class="requirement-label">Volunteer Service</div>
-                    </div>
-                    <div class="requirement personal">
-                        <div class="requirement-value">45 hours</div>
-                        <div class="requirement-label">Personal Development</div>
-                    </div>
-                    <div class="requirement fitness">
-                        <div class="requirement-value">45 hours</div>
-                        <div class="requirement-label">Physical Fitness</div>
-                    </div>
-                    <div class="requirement expedition">
-                        <div class="requirement-value">3</div>
-                        <div class="requirement-label">Expeditions</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="arrow-down">↓</div>
-
-            <div class="level-item">
-                <div class="level-header">
-                    <div class="level-badge bronze-medal">🏅</div>
-                    <div class="level-title">Bronze Medal</div>
-                </div>
-                <div class="level-requirements">
-                    <div class="requirement volunteer">
-                        <div class="requirement-value">100 hours</div>
-                        <div class="requirement-label">Volunteer Service</div>
-                    </div>
-                    <div class="requirement personal">
-                        <div class="requirement-value">50 hours</div>
-                        <div class="requirement-label">Personal Development</div>
-                    </div>
-                    <div class="requirement fitness">
-                        <div class="requirement-value">50 hours</div>
-                        <div class="requirement-label">Physical Fitness</div>
-                    </div>
-                    <div class="requirement expedition">
-                        <div class="requirement-value">1+ night</div>
-                        <div class="requirement-label">Expedition</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="arrow-down">↓</div>
-
-            <div class="level-item">
-                <div class="level-header">
-                    <div class="level-badge silver-medal">🏅</div>
-                    <div class="level-title">Silver Medal</div>
-                </div>
-                <div class="level-requirements">
-                    <div class="requirement volunteer">
-                        <div class="requirement-value">200 hours</div>
-                        <div class="requirement-label">Volunteer Service</div>
-                    </div>
-                    <div class="requirement personal">
-                        <div class="requirement-value">100 hours</div>
-                        <div class="requirement-label">Personal Development</div>
-                    </div>
-                    <div class="requirement fitness">
-                        <div class="requirement-value">100 hours</div>
-                        <div class="requirement-label">Physical Fitness</div>
-                    </div>
-                    <div class="requirement expedition">
-                        <div class="requirement-value">2+ nights</div>
-                        <div class="requirement-label">Expedition</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="arrow-down">↓</div>
-
-            <div class="level-item">
-                <div class="level-header">
-                    <div class="level-badge gold-medal">🏅</div>
-                    <div class="level-title">Gold Medal</div>
-                </div>
-                <div class="level-requirements">
-                    <div class="requirement volunteer">
-                        <div class="requirement-value">400 hours</div>
-                        <div class="requirement-label">Volunteer Service</div>
-                    </div>
-                    <div class="requirement personal">
-                        <div class="requirement-value">200 hours</div>
-                        <div class="requirement-label">Personal Development</div>
-                    </div>
-                    <div class="requirement fitness">
-                        <div class="requirement-value">200 hours</div>
-                        <div class="requirement-label">Physical Fitness</div>
-                    </div>
-                    <div class="requirement expedition">
-                        <div class="requirement-value">4+ nights</div>
-                        <div class="requirement-label">Expedition</div>
-                    </div>
-                </div>
+            
+            <div class="carousel-indicators">
+                <span class="indicator active" onclick="goToSlide(0)"></span>
+                <span class="indicator" onclick="goToSlide(1)"></span>
+                <span class="indicator" onclick="goToSlide(2)"></span>
+                <span class="indicator" onclick="goToSlide(3)"></span>
+                <span class="indicator" onclick="goToSlide(4)"></span>
+                <span class="indicator" onclick="goToSlide(5)"></span>
             </div>
         </div>
 
@@ -373,6 +371,65 @@
     </footer>
 
     <script>
+        // Carousel functionality
+        let currentSlide = 0;
+        const totalSlides = 6;
+        
+        function updateCarousel() {
+            const slides = document.querySelector('.level-slides');
+            const indicators = document.querySelectorAll('.indicator');
+            const prevBtn = document.querySelector('.carousel-btn.prev');
+            const nextBtn = document.querySelector('.carousel-btn.next');
+            
+            slides.style.transform = `translateX(-${currentSlide * 100}%)`;
+            
+            // Update indicators
+            indicators.forEach((indicator, index) => {
+                indicator.classList.toggle('active', index === currentSlide);
+            });
+            
+            // Update button states
+            prevBtn.disabled = currentSlide === 0;
+            nextBtn.disabled = currentSlide === totalSlides - 1;
+        }
+        
+        function changeSlide(direction) {
+            currentSlide += direction;
+            if (currentSlide < 0) currentSlide = 0;
+            if (currentSlide >= totalSlides) currentSlide = totalSlides - 1;
+            updateCarousel();
+        }
+        
+        function goToSlide(index) {
+            currentSlide = index;
+            updateCarousel();
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+        
+        // Touch swipe support
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        const carouselWrapper = document.querySelector('.carousel-wrapper');
+        carouselWrapper.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+        
+        carouselWrapper.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+        
+        function handleSwipe() {
+            if (touchEndX < touchStartX - 50) changeSlide(1); // Swipe left
+            if (touchEndX > touchStartX + 50) changeSlide(-1); // Swipe right
+        }
+        
         // Load navbar for home page
         loadNavbar('home');
     </script>
