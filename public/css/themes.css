@@ -561,6 +561,25 @@ footer {
     background: var(--card-header-bg) !important;
 }
 
+/* Modal styling */
+.modal-content {
+    background: var(--bg-primary) !important;
+    border: 1px solid var(--border-secondary) !important;
+    color: var(--text-primary) !important;
+}
+
+.modal-header h3 {
+    color: var(--text-heading) !important;
+}
+
+.modal-close {
+    color: var(--text-muted) !important;
+}
+
+.modal-close:hover {
+    color: var(--text-primary) !important;
+}
+
 /* Badge colors for light theme */
 :root[data-theme="light"] .badge-success {
     background: #10b981 !important;

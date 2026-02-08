@@ -66,7 +66,7 @@ const sendVerificationEmail = async (supervisorEmail, supervisorName, logDetails
               <p><strong>Date:</strong> ${date}</p>
               <p><strong>Hours:</strong> ${hours}</p>
               ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
-              ${proof ? `<p><strong>Proof:</strong> <a href="${proof}">View attachment</a></p>` : ''}
+              ${proof ? `<p><strong>Proof:</strong> <a href="${process.env.APP_URL}${proof}" target="_blank">View attachment</a></p>` : ''}
             </div>
             
             <p>Please click the button below to review this submission. You will be able to approve or reject it, and provide a reason if needed:</p>
