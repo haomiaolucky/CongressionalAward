@@ -17,6 +17,43 @@ const getDashboard = async (req, res) => {
 
     const student = students[0];
 
+    // Check if membership expired (only if ExpireDate is set)
+    if (student.ExpireDate) {
+      const expireDate = new Date(student.ExpireDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      expireDate.setHours(0, 0, 0, 0); // Normalize expire date too
+      
+      if (expireDate < today) {
+        // Membership expired
+        if (student.Status === 'Active') {
+          // Deactivate student
+          await pool.query(
+            'UPDATE Students SET Status = ? WHERE StudentID = ?',
+            ['Inactive', student.StudentID]
+          );
+          student.Status = 'Inactive';
+          console.log(`Auto-deactivated expired student: ${student.StudentName} (ID: ${student.StudentID})`);
+        }
+        
+        // Return expired status
+        return res.status(403).json({ 
+          error: 'Membership expired',
+          expired: true,
+          expireDate: student.ExpireDate
+        });
+      }
+    }
+
+    // Check if student status is Active
+    // Only block if Status is explicitly 'Inactive', allow if Status is 'Active' or NULL
+    if (student.Status === 'Inactive') {
+      return res.status(403).json({ 
+        error: 'Account is inactive',
+        inactive: true
+      });
+    }
+
     // Get hours summary from view
     const [summary] = await pool.query(
       'SELECT * FROM StudentHoursSummary WHERE StudentID = ?',
@@ -48,7 +85,8 @@ const getDashboard = async (req, res) => {
         grade: student.Grade,
         school: student.SchoolName,
         startDate: student.StartDate,
-        currentLevel: student.CurrentLevel
+        currentLevel: student.CurrentLevel,
+        expireDate: student.ExpireDate
       },
       hours: {
         volunteer: parseFloat(stats.VolunteerHours),

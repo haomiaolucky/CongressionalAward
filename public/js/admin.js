@@ -129,16 +129,39 @@ function displayStudents(students) {
     const tbody = document.getElementById('studentsBody');
     
     if (students.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No students found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No students found</td></tr>';
         return;
     }
     
-    tbody.innerHTML = students.map(student => `
+    tbody.innerHTML = students.map(student => {
+        const expireDate = student.ExpireDate ? new Date(student.ExpireDate) : null;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const isExpired = expireDate && expireDate < today;
+        const daysUntilExpire = expireDate ? Math.ceil((expireDate - today) / (1000 * 60 * 60 * 24)) : null;
+        const isExpiringSoon = daysUntilExpire !== null && daysUntilExpire > 0 && daysUntilExpire <= 30;
+        
+        return `
         <tr>
             <td>${student.StudentName}</td>
             <td>${student.Email}</td>
             <td>${student.Grade}</td>
             <td>${student.CurrentLevel || 'In Progress'}</td>
+            <td>
+                ${expireDate ? `
+                    <span style="color: ${isExpired ? '#ff4444' : isExpiringSoon ? '#ffaa00' : 'rgba(255, 255, 255, 0.9)'}; cursor: pointer;" 
+                          onclick="showEditExpireDateModal(${student.StudentID}, '${student.StudentName}', '${student.ExpireDate}')"
+                          title="Click to edit">
+                        ${expireDate.toLocaleDateString()}
+                        ${isExpired ? ' ⚠️ EXPIRED' : isExpiringSoon ? ` ⏰ (${daysUntilExpire}d)` : ''}
+                    </span>
+                ` : `
+                    <span style="color: rgba(255, 255, 255, 0.5); cursor: pointer;"
+                          onclick="showEditExpireDateModal(${student.StudentID}, '${student.StudentName}', '')">
+                        Not set
+                    </span>
+                `}
+            </td>
             <td><span class="badge badge-${student.StudentStatus === 'Active' ? 'active' : 'inactive'}">${student.StudentStatus === 'Active' ? 'Active' : 'Inactive'}</span></td>
             <td>
                 <div class="action-buttons">
@@ -149,7 +172,8 @@ function displayStudents(students) {
                 </div>
             </td>
         </tr>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // Load supervisors
@@ -773,12 +797,19 @@ function displayLogs(logs) {
     const tbody = document.getElementById('logsBody');
     
     if (logs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No logs found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No logs found</td></tr>';
         return;
     }
     
     tbody.innerHTML = logs.map(log => `
         <tr>
+            <td>
+                ${log.Proof ? `
+                    <a href="${log.Proof}" target="_blank" title="View full image">
+                        <img src="${log.Proof}" alt="Proof" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 2px solid rgba(0, 255, 234, 0.3); cursor: pointer;">
+                    </a>
+                ` : '<span style="color: rgba(255, 255, 255, 0.5);">No proof</span>'}
+            </td>
             <td>${log.StudentName}</td>
             <td>${log.ActivityName}</td>
             <td>${log.Category}</td>
@@ -788,6 +819,221 @@ function displayLogs(logs) {
             <td><span class="badge badge-${log.Status === 'Approved' ? 'active' : log.Status === 'Pending' ? 'pending' : 'inactive'}">${log.Status}</span></td>
         </tr>
     `).join('');
+}
+
+// Add image error handling
+document.addEventListener('error', function(e) {
+    if (e.target.tagName === 'IMG') {
+        e.target.style.display = 'none';
+        e.target.parentElement.innerHTML = '<span style="color: rgba(255, 255, 255, 0.5); font-size: 0.8em;">Image unavailable</span>';
+    }
+}, true);
+
+// Export to Excel function
+function exportLogsToExcel() {
+    if (allLogs.length === 0) {
+        alert('No data to export');
+        return;
+    }
+
+    // Get currently filtered logs
+    const studentFilter = document.getElementById('logStudentFilter').value;
+    const activityFilter = document.getElementById('logActivityFilter').value;
+    const categoryFilter = document.getElementById('logCategoryFilter').value;
+    const statusFilter = document.getElementById('logStatusFilter').value;
+    
+    const filtered = allLogs.filter(log => {
+        const matchesStudent = !studentFilter || log.StudentName === studentFilter;
+        const matchesActivity = !activityFilter || log.ActivityName === activityFilter;
+        const matchesCategory = !categoryFilter || log.Category === categoryFilter;
+        const matchesStatus = !statusFilter || log.Status === statusFilter;
+        return matchesStudent && matchesActivity && matchesCategory && matchesStatus;
+    });
+
+    if (filtered.length === 0) {
+        alert('No logs match the current filters');
+        return;
+    }
+
+    // Prepare data for Excel
+    const excelData = filtered.map(log => ({
+        'Student': log.StudentName,
+        'Activity': log.ActivityName,
+        'Category': log.Category,
+        'Date': new Date(log.Date).toLocaleDateString(),
+        'Hours': log.Hours,
+        'Supervisor': log.SupervisorName,
+        'Status': log.Status,
+        'Notes': log.Notes || '',
+        'Proof Image': log.Proof || 'No proof',
+        'Submitted': new Date(log.SubmittedAt).toLocaleDateString()
+    }));
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // Set column widths
+    ws['!cols'] = [
+        { wch: 20 },  // Student
+        { wch: 25 },  // Activity
+        { wch: 20 },  // Category
+        { wch: 12 },  // Date
+        { wch: 8 },   // Hours
+        { wch: 20 },  // Supervisor
+        { wch: 10 },  // Status
+        { wch: 30 },  // Notes
+        { wch: 50 },  // Proof Image (URL)
+        { wch: 12 }   // Submitted
+    ];
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Hour Logs');
+
+    // Generate filename with current date
+    const filename = `Admin_Hour_Logs_${new Date().toISOString().split('T')[0]}.xlsx`;
+    
+    // Download file
+    XLSX.writeFile(wb, filename);
+    
+    console.log('Excel file exported successfully');
+}
+
+// Export to PDF function
+function exportLogsToPDF() {
+    if (allLogs.length === 0) {
+        alert('No data to export');
+        return;
+    }
+
+    // Get currently filtered logs
+    const studentFilter = document.getElementById('logStudentFilter').value;
+    const activityFilter = document.getElementById('logActivityFilter').value;
+    const categoryFilter = document.getElementById('logCategoryFilter').value;
+    const statusFilter = document.getElementById('logStatusFilter').value;
+    
+    const filtered = allLogs.filter(log => {
+        const matchesStudent = !studentFilter || log.StudentName === studentFilter;
+        const matchesActivity = !activityFilter || log.ActivityName === activityFilter;
+        const matchesCategory = !categoryFilter || log.Category === categoryFilter;
+        const matchesStatus = !statusFilter || log.Status === statusFilter;
+        return matchesStudent && matchesActivity && matchesCategory && matchesStatus;
+    });
+
+    if (filtered.length === 0) {
+        alert('No logs match the current filters');
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
+
+    // Add title
+    doc.setFontSize(18);
+    doc.text('Congressional Award - Hour Logs Report', 14, 15);
+    
+    // Add date
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
+    doc.text(`Total Records: ${filtered.length}`, 14, 27);
+
+    // Add filters info if any
+    let yPos = 32;
+    if (studentFilter || activityFilter || categoryFilter || statusFilter) {
+        doc.text('Filters Applied:', 14, yPos);
+        yPos += 5;
+        if (studentFilter) {
+            doc.text(`  • Student: ${studentFilter}`, 14, yPos);
+            yPos += 5;
+        }
+        if (activityFilter) {
+            doc.text(`  • Activity: ${activityFilter}`, 14, yPos);
+            yPos += 5;
+        }
+        if (categoryFilter) {
+            doc.text(`  • Category: ${categoryFilter}`, 14, yPos);
+            yPos += 5;
+        }
+        if (statusFilter) {
+            doc.text(`  • Status: ${statusFilter}`, 14, yPos);
+            yPos += 5;
+        }
+    }
+
+    // Prepare table data
+    const tableData = filtered.map(log => [
+        log.StudentName,
+        log.ActivityName,
+        log.Category,
+        new Date(log.Date).toLocaleDateString(),
+        log.Hours.toString(),
+        log.SupervisorName,
+        log.Status,
+        log.Proof ? 'View' : 'No proof'
+    ]);
+
+    // Add table
+    doc.autoTable({
+        startY: yPos + 5,
+        head: [['Student', 'Activity', 'Category', 'Date', 'Hours', 'Supervisor', 'Status', 'Proof']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: {
+            fillColor: [0, 102, 204],
+            textColor: 255,
+            fontSize: 9,
+            fontStyle: 'bold'
+        },
+        bodyStyles: {
+            fontSize: 8
+        },
+        columnStyles: {
+            0: { cellWidth: 35 },  // Student
+            1: { cellWidth: 50 },  // Activity
+            2: { cellWidth: 35 },  // Category
+            3: { cellWidth: 25 },  // Date
+            4: { cellWidth: 15 },  // Hours
+            5: { cellWidth: 35 },  // Supervisor
+            6: { cellWidth: 25 },  // Status
+            7: { cellWidth: 25 }   // Proof
+        },
+        didDrawCell: function(data) {
+            // Add clickable links for proof images
+            if (data.column.index === 7 && data.cell.section === 'body') {
+                const log = filtered[data.row.index];
+                if (log.Proof) {
+                    doc.setTextColor(0, 0, 255);
+                    doc.textWithLink('View', data.cell.x + 2, data.cell.y + 5, {
+                        url: log.Proof
+                    });
+                    doc.setTextColor(0, 0, 0);
+                }
+            }
+        }
+    });
+
+    // Add summary statistics
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.setFontSize(10);
+    doc.text('Summary Statistics:', 14, finalY);
+    
+    const totalHours = filtered.reduce((sum, log) => sum + parseFloat(log.Hours), 0);
+    const approvedCount = filtered.filter(log => log.Status === 'Approved').length;
+    const pendingCount = filtered.filter(log => log.Status === 'Pending').length;
+    const rejectedCount = filtered.filter(log => log.Status === 'Rejected').length;
+    
+    doc.text(`Total Hours: ${totalHours.toFixed(1)}`, 14, finalY + 6);
+    doc.text(`Approved: ${approvedCount}`, 70, finalY + 6);
+    doc.text(`Pending: ${pendingCount}`, 120, finalY + 6);
+    doc.text(`Rejected: ${rejectedCount}`, 170, finalY + 6);
+
+    // Generate filename
+    const filename = `Admin_Hour_Logs_${new Date().toISOString().split('T')[0]}.pdf`;
+    
+    // Download PDF
+    doc.save(filename);
+    
+    console.log('PDF exported successfully');
 }
 
 // Log filters
@@ -850,6 +1096,55 @@ function filterStudents() {
     
     displayStudents(filtered);
 }
+
+// Expire date modal functions
+function showEditExpireDateModal(studentId, studentName, currentExpireDate) {
+    document.getElementById('expireStudentId').value = studentId;
+    document.getElementById('expireStudentName').value = studentName;
+    
+    // Format date for input field (YYYY-MM-DD)
+    if (currentExpireDate) {
+        const date = new Date(currentExpireDate);
+        document.getElementById('expireDate').value = date.toISOString().split('T')[0];
+    } else {
+        // Default to 6 months from now
+        const sixMonthsLater = new Date();
+        sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
+        document.getElementById('expireDate').value = sixMonthsLater.toISOString().split('T')[0];
+    }
+    
+    document.getElementById('expireDateModal').classList.add('active');
+}
+
+function closeExpireDateModal() {
+    document.getElementById('expireDateModal').classList.remove('active');
+}
+
+document.getElementById('expireDateForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const studentId = document.getElementById('expireStudentId').value;
+    const expireDate = document.getElementById('expireDate').value;
+    
+    try {
+        const response = await apiCall(`/api/admin/students/${studentId}/expire-date`, {
+            method: 'PUT',
+            body: JSON.stringify({ expireDate })
+        });
+        
+        if (response.ok) {
+            alert('Expire date updated successfully');
+            closeExpireDateModal();
+            await loadStudents();
+        } else {
+            const error = await response.json();
+            alert(error.error || 'Failed to update expire date');
+        }
+    } catch (error) {
+        console.error('Error updating expire date:', error);
+        alert('Failed to update expire date');
+    }
+});
 
 // Initialize
 loadDashboard();

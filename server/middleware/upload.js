@@ -2,8 +2,9 @@ const multer = require('multer');
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
+const { isBlobStorageEnabled, uploadImageToBlob } = require('../utils/azureBlobStorage');
 
-// Create uploads directory if it doesn't exist
+// Create uploads directory if it doesn't exist (fallback for local storage)
 const uploadsDir = path.join(__dirname, '../../uploads/proofs');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -34,67 +35,82 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
-// Middleware to compress images after upload
-const compressImage = async (req, res, next) => {
+// Middleware to process and upload files (to Blob Storage or local)
+const processAndUpload = async (req, res, next) => {
   if (!req.file) {
     return next();
   }
 
-  // Only compress images, not PDFs
-  const isImage = /jpeg|jpg|png/.test(path.extname(req.file.originalname).toLowerCase());
-  
-  if (!isImage) {
-    // For PDFs, save directly
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(req.file.originalname);
-    const name = path.basename(req.file.originalname, ext);
-    const filename = name + '-' + uniqueSuffix + ext;
-    const filepath = path.join(uploadsDir, filename);
-    
-    fs.writeFileSync(filepath, req.file.buffer);
-    req.file.filename = filename;
-    req.file.path = filepath;
-    return next();
-  }
-
   try {
-    // Create unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const name = path.basename(req.file.originalname, path.extname(req.file.originalname));
-    const filename = name + '-' + uniqueSuffix + '.jpg';
-    const filepath = path.join(uploadsDir, filename);
+    const isImage = /jpeg|jpg|png/.test(path.extname(req.file.originalname).toLowerCase());
+    const useBlobStorage = isBlobStorageEnabled();
 
-    // Compress and resize image
-    await sharp(req.file.buffer)
-      .resize(1920, 1920, { // Max 1920x1920, maintain aspect ratio
-        fit: 'inside',
-        withoutEnlargement: true
-      })
-      .jpeg({ 
-        quality: 85, // Good quality, smaller size
-        progressive: true 
-      })
-      .toFile(filepath);
+    if (useBlobStorage) {
+      // Upload to Azure Blob Storage
+      const blobUrl = await uploadImageToBlob(
+        req.file.buffer,
+        req.file.originalname,
+        req.file.mimetype
+      );
+      
+      // Store blob URL in req.file for consistency
+      req.file.blobUrl = blobUrl;
+      req.file.path = blobUrl; // For compatibility with existing code
+      
+      console.log(`✅ File uploaded to Azure Blob Storage: ${req.file.originalname}`);
+    } else {
+      // Fallback to local storage
+      if (!isImage) {
+        // For PDFs, save directly
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(req.file.originalname);
+        const name = path.basename(req.file.originalname, ext);
+        const filename = name + '-' + uniqueSuffix + ext;
+        const filepath = path.join(uploadsDir, filename);
+        
+        fs.writeFileSync(filepath, req.file.buffer);
+        req.file.filename = filename;
+        req.file.path = '/uploads/proofs/' + filename; // Web-accessible path
+        
+        console.log(`✅ PDF saved locally: ${filename}`);
+      } else {
+        // Compress and save images locally
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const name = path.basename(req.file.originalname, path.extname(req.file.originalname));
+        const filename = name + '-' + uniqueSuffix + '.jpg';
+        const filepath = path.join(uploadsDir, filename);
 
-    // Update req.file with processed file info
-    req.file.filename = filename;
-    req.file.path = filepath;
-    
-    // Get file stats
-    const stats = fs.statSync(filepath);
-    req.file.size = stats.size;
+        // Compress and resize image
+        await sharp(req.file.buffer)
+          .resize(1920, 1920, {
+            fit: 'inside',
+            withoutEnlargement: true
+          })
+          .jpeg({ 
+            quality: 85,
+            progressive: true 
+          })
+          .toFile(filepath);
 
-    console.log(`✅ Image compressed: ${req.file.originalname} → ${filename} (${(stats.size / 1024).toFixed(1)}KB)`);
+        req.file.filename = filename;
+        req.file.path = '/uploads/proofs/' + filename; // Web-accessible path
+        
+        const stats = fs.statSync(filepath);
+        req.file.size = stats.size;
+
+        console.log(`✅ Image compressed and saved locally: ${req.file.originalname} → ${filename} (${(stats.size / 1024).toFixed(1)}KB)`);
+      }
+    }
     
     next();
   } catch (error) {
-    console.error('❌ Image compression error:', error);
+    console.error('❌ File processing error:', error);
     next(error);
   }
 };
 
-// Export both middleware
+// Export middleware
 module.exports = {
-  single: (fieldName) => [upload.single(fieldName), compressImage],
-  compressImage
+  single: (fieldName) => [upload.single(fieldName), processAndUpload],
+  processAndUpload
 };

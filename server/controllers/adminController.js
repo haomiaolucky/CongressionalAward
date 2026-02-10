@@ -111,6 +111,7 @@ const getAllStudents = async (req, res) => {
   try {
     const [students] = await pool.query(
       `SELECT s.StudentID, s.StudentName, s.Grade, s.SchoolName, s.StartDate, s.CurrentLevel, s.Status as StudentStatus,
+       s.ExpireDate,
        u.Email, u.Status as AccountStatus, u.UserID,
        shs.VolunteerHours, shs.PersonalDevelopmentHours, shs.PhysicalFitnessHours, 
        shs.ExpeditionCount, shs.PendingLogs, shs.ApprovedLogs
@@ -133,8 +134,9 @@ const activateStudent = async (req, res) => {
   const studentId = req.params.id;
 
   try {
+    // Set expire date to 6 months from now when activating
     const [result] = await pool.query(
-      'UPDATE Students SET Status = ? WHERE StudentID = ?',
+      'UPDATE Students SET Status = ?, ExpireDate = DATE_ADD(CURDATE(), INTERVAL 6 MONTH) WHERE StudentID = ?',
       ['Active', studentId]
     );
 
@@ -142,7 +144,7 @@ const activateStudent = async (req, res) => {
       return res.status(404).json({ error: 'Student not found' });
     }
 
-    res.json({ message: 'Student activated successfully' });
+    res.json({ message: 'Student activated successfully with 6-month expiration' });
   } catch (error) {
     console.error('Activate student error:', error);
     res.status(500).json({ error: 'Failed to activate student' });
@@ -465,6 +467,44 @@ const addAdminUser = async (req, res) => {
   }
 };
 
+// Update student expire date
+const updateStudentExpireDate = async (req, res) => {
+  const studentId = req.params.id;
+  const { expireDate } = req.body;
+
+  try {
+    // Check if new expire date is in the future
+    const newExpireDate = new Date(expireDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // If expire date is in the future, auto-activate the student
+    if (newExpireDate >= today) {
+      await pool.query(
+        'UPDATE Students SET ExpireDate = ?, Status = ? WHERE StudentID = ?',
+        [expireDate, 'Active', studentId]
+      );
+      res.json({ 
+        message: 'Student expire date updated and account activated successfully',
+        autoActivated: true
+      });
+    } else {
+      // If expire date is in the past, just update the date without changing status
+      await pool.query(
+        'UPDATE Students SET ExpireDate = ? WHERE StudentID = ?',
+        [expireDate, studentId]
+      );
+      res.json({ 
+        message: 'Student expire date updated successfully',
+        autoActivated: false
+      });
+    }
+  } catch (error) {
+    console.error('Update student expire date error:', error);
+    res.status(500).json({ error: 'Failed to update expire date' });
+  }
+};
+
 // Deactivate admin user
 const deactivateAdminUser = async (req, res) => {
   const adminId = req.params.id;
@@ -590,6 +630,7 @@ module.exports = {
   getAllStudents,
   activateStudent,
   deactivateStudent,
+  updateStudentExpireDate,
   getAllHourLogs,
   getPublicActivities,
   getActivities,

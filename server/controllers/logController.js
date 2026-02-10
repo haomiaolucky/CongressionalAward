@@ -26,7 +26,8 @@ const createLog = async (req, res) => {
   const userId = req.user.userId;
   
   // Get uploaded file path if exists
-  const proof = req.file ? `/uploads/proofs/${req.file.filename}` : null;
+  // req.file.path contains either blob URL (Azure) or local path
+  const proof = req.file ? req.file.path : null;
 
   try {
     // Get student ID
@@ -150,7 +151,8 @@ const updateLog = async (req, res) => {
   const { activityName, date, hours, notes } = req.body;
   
   // Get uploaded file path if exists
-  const proof = req.file ? `/uploads/proofs/${req.file.filename}` : req.body.existingProof;
+  // req.file.path contains either blob URL (Azure) or local path
+  const proof = req.file ? req.file.path : req.body.existingProof;
 
   try {
     // Get student ID

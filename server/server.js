@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const { testConnection } = require('./config/db');
 const { verifyEmailConfig } = require('./utils/emailService');
+const { initializeBlobStorage, ensureContainerExists } = require('./utils/azureBlobStorage');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -94,6 +95,12 @@ const startServer = async () => {
     // Verify email configuration
     await verifyEmailConfig();
     
+    // Initialize Azure Blob Storage (optional - falls back to local storage if not configured)
+    const blobStorageEnabled = initializeBlobStorage();
+    if (blobStorageEnabled) {
+      await ensureContainerExists();
+    }
+    
     // Start listening
     app.listen(PORT, () => {
       console.log('='.repeat(50));
@@ -103,6 +110,7 @@ const startServer = async () => {
       console.log(`🌐 Local: http://localhost:${PORT}`);
       console.log(`📧 Email service configured`);
       console.log(`💾 Database connected`);
+      console.log(`📦 Storage: ${blobStorageEnabled ? 'Azure Blob Storage' : 'Local File System'}`);
       console.log('='.repeat(50));
       console.log('Press Ctrl+C to stop the server');
     });

@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="/css/themes.css">
     <script src="/js/navbar.js"></script>
     <script src="/js/theme-switcher.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
         body {
             background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
@@ -319,7 +322,13 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h3>All Hour Logs</h3>
-                        <div class="search-filter">
+                        <div class="search-filter" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <button class="btn btn-success btn-sm" onclick="exportLogsToExcel()" title="Export to Excel">
+                                📊 Export Excel
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="exportLogsToPDF()" title="Export to PDF">
+                                📄 Export PDF
+                            </button>
                             <select id="logStudentFilter" class="form-select" style="width: 180px;">
                                 <option value="">All Students</option>
                             </select>
@@ -345,6 +354,7 @@
                         <table class="table" id="logsTable">
                             <thead>
                                 <tr>
+                                    <th>Proof</th>
                                     <th>Student</th>
                                     <th>Activity</th>
                                     <th>Category</th>
@@ -355,7 +365,7 @@
                                 </tr>
                             </thead>
                             <tbody id="logsBody">
-                                <tr><td colspan="7" class="text-center">Loading...</td></tr>
+                                <tr><td colspan="8" class="text-center">Loading...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -384,12 +394,13 @@
                                     <th>Email</th>
                                     <th>Grade</th>
                                     <th>Level</th>
+                                    <th>Expire Date</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="studentsBody">
-                                <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                                <tr><td colspan="7" class="text-center">Loading...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -580,6 +591,32 @@
                 <div class="d-flex justify-content-end gap-2">
                     <button type="button" class="btn btn-secondary" onclick="closeAdminModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Expire Date Modal -->
+    <div class="modal" id="expireDateModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Expiration Date</h3>
+                <button class="modal-close" onclick="closeExpireDateModal()">×</button>
+            </div>
+            <form id="expireDateForm">
+                <input type="hidden" id="expireStudentId">
+                <div class="form-group">
+                    <label class="form-label">Student Name</label>
+                    <input type="text" class="form-control" id="expireStudentName" readonly style="background: rgba(255, 255, 255, 0.1);">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Expiration Date *</label>
+                    <input type="date" class="form-control" id="expireDate" required>
+                    <small class="form-text">Set the date when this student's membership expires.</small>
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary" onclick="closeExpireDateModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update</button>
                 </div>
             </form>
         </div>

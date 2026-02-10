@@ -9,6 +9,9 @@
     <script src="/js/navbar.js"></script>
     <script src="/js/theme-switcher.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
         body {
             background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
@@ -85,7 +88,10 @@
                             <p><strong>School:</strong> <span id="school"></span></p>
                             <p><strong>Start Date:</strong> <span id="startDate"></span></p>
                         </div>
-                        <div class="col-6 text-right">
+                        <div class="col-3">
+                            <p><strong>Membership Expires:</strong> <span id="expireDate"></span></p>
+                        </div>
+                        <div class="col-3 text-right">
                             <a href="/submit-log" class="btn btn-primary btn-lg">➕ Submit New Record</a>
                         </div>
                     </div>
@@ -142,7 +148,13 @@
             <div class="card" style="margin-top: 1.5rem;">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3>My Activity Log</h3>
-                    <div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="btn btn-success btn-sm" onclick="exportToExcel()" title="Export to Excel">
+                            📊 Export Excel
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="exportToPDF()" title="Export to PDF">
+                            📄 Export PDF
+                        </button>
                         <input type="text" id="searchInput" class="form-control" placeholder="Search activities..." style="display: inline-block; width: 250px; margin-right: 10px;">
                         <select id="filterCategory" class="form-select" style="display: inline-block; width: 200px;">
                             <option value="">All Categories</option>
@@ -157,6 +169,7 @@
                     <table class="table" id="logsTable">
                         <thead>
                             <tr>
+                                <th>Proof</th>
                                 <th>Date</th>
                                 <th>Activity</th>
                                 <th>Category</th>
@@ -199,6 +212,23 @@
                 const dashboardResponse = await fetch('/api/students/dashboard', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
+                
+                // Check if membership expired
+                if (dashboardResponse.status === 403) {
+                    const errorData = await dashboardResponse.json();
+                    if (errorData.expired) {
+                        // Redirect to expired page with date
+                        window.location.href = `/membership-expired.html?date=${errorData.expireDate}`;
+                        return;
+                    } else if (errorData.inactive) {
+                        alert('Your account is inactive. Please contact your administrator.');
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        window.location.href = '/login';
+                        return;
+                    }
+                }
+                
                 const dashboard = await dashboardResponse.json();
 
                 // Load logs
@@ -228,6 +258,28 @@
             document.getElementById('school').textContent = user.SchoolName || 'N/A';
             document.getElementById('startDate').textContent = new Date(user.StartDate).toLocaleDateString();
             document.getElementById('currentLevel').textContent = dashboard.student.currentLevel;
+            
+            // Display expire date with color coding
+            const expireDateElement = document.getElementById('expireDate');
+            if (dashboard.student.expireDate) {
+                const expireDate = new Date(dashboard.student.expireDate);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const isExpired = expireDate < today;
+                const daysUntilExpire = Math.ceil((expireDate - today) / (1000 * 60 * 60 * 24));
+                const isExpiringSoon = daysUntilExpire > 0 && daysUntilExpire <= 30;
+                
+                const dateStr = expireDate.toLocaleDateString();
+                if (isExpired) {
+                    expireDateElement.innerHTML = `<span style="color: #ff4444; font-weight: bold;">${dateStr} ⚠️ EXPIRED</span>`;
+                } else if (isExpiringSoon) {
+                    expireDateElement.innerHTML = `<span style="color: #ffaa00; font-weight: bold;">${dateStr} ⏰ (${daysUntilExpire} days left)</span>`;
+                } else {
+                    expireDateElement.innerHTML = `<span style="color: rgba(255, 255, 255, 0.9);">${dateStr}</span>`;
+                }
+            } else {
+                expireDateElement.textContent = 'Not set';
+            }
         }
 
         function displayHoursSummary(hours) {
@@ -305,6 +357,13 @@
 
             tbody.innerHTML = logs.map(log => `
                 <tr>
+                    <td>
+                        ${log.Proof ? `
+                            <a href="${log.Proof}" target="_blank" title="View full image">
+                                <img src="${log.Proof}" alt="Proof" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 2px solid rgba(0, 255, 234, 0.3); cursor: pointer;">
+                            </a>
+                        ` : '<span style="color: rgba(255, 255, 255, 0.5);">No proof</span>'}
+                    </td>
                     <td>${new Date(log.Date).toLocaleDateString()}</td>
                     <td>${log.ActivityName}</td>
                     <td>${log.Category}</td>
@@ -334,6 +393,14 @@
 
             displayLogs(filtered);
         }
+
+        // Add image error handling
+        document.addEventListener('error', function(e) {
+            if (e.target.tagName === 'IMG') {
+                e.target.style.display = 'none';
+                e.target.parentElement.innerHTML = '<span style="color: rgba(255, 255, 255, 0.5); font-size: 0.8em;">Image unavailable</span>';
+            }
+        }, true);
 
         async function editLog(logId) {
             const log = allLogs.find(l => l.LogID === logId);
@@ -365,6 +432,147 @@
                 console.error('Error deleting log:', error);
                 alert('Failed to delete log');
             }
+        }
+
+        // Export to Excel function
+        function exportToExcel() {
+            if (allLogs.length === 0) {
+                alert('No data to export');
+                return;
+            }
+
+            // Prepare data for Excel
+            const excelData = allLogs.map(log => ({
+                'Date': new Date(log.Date).toLocaleDateString(),
+                'Activity': log.ActivityName,
+                'Category': log.Category,
+                'Hours': log.Hours,
+                'Supervisor': log.SupervisorName,
+                'Status': log.Status,
+                'Notes': log.Notes || '',
+                'Proof Image': log.Proof || 'No proof',
+                'Submitted': new Date(log.CreatedAt).toLocaleDateString()
+            }));
+
+            // Create workbook and worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(excelData);
+
+            // Set column widths
+            ws['!cols'] = [
+                { wch: 12 },  // Date
+                { wch: 25 },  // Activity
+                { wch: 20 },  // Category
+                { wch: 8 },   // Hours
+                { wch: 20 },  // Supervisor
+                { wch: 10 },  // Status
+                { wch: 30 },  // Notes
+                { wch: 50 },  // Proof Image (URL)
+                { wch: 12 }   // Submitted
+            ];
+
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'Activity Log');
+
+            // Generate filename with current date
+            const filename = `Activity_Log_${new Date().toISOString().split('T')[0]}.xlsx`;
+            
+            // Download file
+            XLSX.writeFile(wb, filename);
+            
+            console.log('Excel file exported successfully');
+        }
+
+        // Export to PDF function
+        function exportToPDF() {
+            if (allLogs.length === 0) {
+                alert('No data to export');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4'); // Landscape orientation
+
+            // Get student info
+            const studentName = document.getElementById('studentName').textContent;
+            const studentEmail = document.getElementById('email').textContent;
+            
+            // Add title
+            doc.setFontSize(18);
+            doc.text('Congressional Award Activity Log', 14, 15);
+            
+            // Add student info
+            doc.setFontSize(10);
+            doc.text(`Student: ${studentName}`, 14, 22);
+            doc.text(`Email: ${studentEmail}`, 14, 27);
+            doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 32);
+
+            // Prepare table data
+            const tableData = allLogs.map(log => [
+                new Date(log.Date).toLocaleDateString(),
+                log.ActivityName,
+                log.Category,
+                log.Hours.toString(),
+                log.SupervisorName,
+                log.Status,
+                log.Proof ? 'View' : 'No proof'
+            ]);
+
+            // Add table
+            doc.autoTable({
+                startY: 38,
+                head: [['Date', 'Activity', 'Category', 'Hours', 'Supervisor', 'Status', 'Proof']],
+                body: tableData,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [0, 102, 204],
+                    textColor: 255,
+                    fontSize: 9,
+                    fontStyle: 'bold'
+                },
+                bodyStyles: {
+                    fontSize: 8
+                },
+                columnStyles: {
+                    0: { cellWidth: 25 },  // Date
+                    1: { cellWidth: 60 },  // Activity
+                    2: { cellWidth: 40 },  // Category
+                    3: { cellWidth: 20 },  // Hours
+                    4: { cellWidth: 45 },  // Supervisor
+                    5: { cellWidth: 25 },  // Status
+                    6: { cellWidth: 25 }   // Proof
+                },
+                didDrawCell: function(data) {
+                    // Add clickable links for proof images
+                    if (data.column.index === 6 && data.cell.section === 'body') {
+                        const log = allLogs[data.row.index];
+                        if (log.Proof) {
+                            doc.setTextColor(0, 0, 255);
+                            doc.textWithLink('View', data.cell.x + 2, data.cell.y + 5, {
+                                url: log.Proof
+                            });
+                            doc.setTextColor(0, 0, 0);
+                        }
+                    }
+                }
+            });
+
+            // Add summary at the bottom
+            const finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFontSize(10);
+            doc.text('Hours Summary:', 14, finalY);
+            doc.text(`Volunteer: ${document.getElementById('volunteerHours').textContent}h`, 14, finalY + 6);
+            doc.text(`Personal Development: ${document.getElementById('pdHours').textContent}h`, 60, finalY + 6);
+            doc.text(`Physical Fitness: ${document.getElementById('pfHours').textContent}h`, 120, finalY + 6);
+            doc.text(`Expeditions: ${document.getElementById('expeditions').textContent}`, 180, finalY + 6);
+
+            // Generate filename
+            const filename = `Activity_Log_${new Date().toISOString().split('T')[0]}.pdf`;
+            
+            // Download PDF
+            doc.save(filename);
+            
+            console.log('PDF exported successfully');
         }
 
         document.getElementById('searchInput').addEventListener('input', filterLogs);

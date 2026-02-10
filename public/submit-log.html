@@ -314,6 +314,12 @@
             formData.append('hours', document.getElementById('hours').value);
             formData.append('supervisorId', document.getElementById('supervisorId').value);
             formData.append('notes', document.getElementById('notes').value);
+            
+            // Add activityId if selected from the list
+            const activitySelect = document.getElementById('activitySelect');
+            if (activitySelect.value) {
+                formData.append('activityId', activitySelect.value);
+            }
 
             // Add file if selected
             if (fileInput.files[0]) {
